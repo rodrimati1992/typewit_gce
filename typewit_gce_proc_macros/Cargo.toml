@@ -1,0 +1,24 @@
+[package]
+name = "typewit_gce_proc_macros"
+version = "0.1.0"
+edition = "2024"
+authors = ["rodrimati1992 <rodrimatt1985@gmail.com>"]
+rust-version = "1.90.0"
+license = "Zlib"
+description = "implementation detail of typewit_gce"
+repository = "https://github.com/rodrimati1992/typewit_gce/"
+include = [
+    "Cargo.toml", 
+    "src/**/*.rs", 
+    "LICENSE-ZLIB.md", 
+]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+num-bigint = "0.4"
+num-traits = "0.2.19"
+proc-macro2 = "1.0.100"
+
+
