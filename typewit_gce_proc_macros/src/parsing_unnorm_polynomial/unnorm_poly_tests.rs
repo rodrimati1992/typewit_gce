@@ -25,6 +25,7 @@ fn basic_arith_ops() {
     for s in [
         " 1+1-2+1*B/C%D*20",
         "+1+1-2+1*B/C%D*20",
+        "+&1+1-&2+1*&B/&C%&D*&20",
     ] {
         assert_eq!(
             parse(s).unwrap(),
@@ -36,11 +37,11 @@ fn basic_arith_ops() {
                     UME::FunctionCall(UnnormFunctionCall::Rem(
                         vec![
                             UME::FunctionCall(UnnormFunctionCall::Div(
-                                vec![constant(1), variable("B")],
-                                Box::new(variable("C"))
+                                vec![constant(1), variable("B")].into(),
+                                vec![variable("C")].into(),
                             ))
-                        ],
-                        Box::new(variable("D"))
+                        ].into(),
+                        vec![variable("D")].into(),
                     )),
                     constant(20),
                 ],

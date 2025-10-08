@@ -34,8 +34,8 @@ pub(crate) enum UnnormMulExpr {
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum UnnormFunctionCall {
-    Rem(Vec<UnnormMulExpr>, Box<UnnormMulExpr>),
-    Div(Vec<UnnormMulExpr>, Box<UnnormMulExpr>),
+    Rem(UnnormPolynomialTerm, UnnormPolynomialTerm),
+    Div(UnnormPolynomialTerm, UnnormPolynomialTerm),
     Other {
         name: String,
         args: Vec<UnnormPolynomial>
@@ -46,9 +46,15 @@ impl From<Vec<Vec<UnnormMulExpr>>> for UnnormPolynomial {
     fn from(vv: Vec<Vec<UnnormMulExpr>>) -> Self {
         Self {
             terms: vv.into_iter()
-                .map(|mul_exprs| UnnormPolynomialTerm { mul_exprs })
+                .map(UnnormPolynomialTerm::from)
                 .collect()
         }
+    }
+}
+
+impl From<Vec<UnnormMulExpr>> for UnnormPolynomialTerm {
+    fn from(mul_exprs: Vec<UnnormMulExpr>) -> Self {
+        Self { mul_exprs }
     }
 }
 
@@ -87,15 +93,16 @@ pub(crate) fn parse_polynomial(parser: &mut Parser) -> Result<UnnormPolynomial, 
             None => {
                 break
             }
-            Some(TT::Punct(p)) if p.as_char() == '-' => {
-                if let Some(neg) = parse_neg(parser) {
-                    term.mul_exprs.push(neg);
-                }
-            }
             Some(TT::Punct(p)) if p.as_char() == '+' => {
                 _ = parser.next();
             }
             _ => {}
+        }
+        if let Some(TT::Punct(p)) = parser.peek() 
+        && p.as_char() == '-'
+        && let Some(neg) = parse_neg(parser)
+        {
+            term.mul_exprs.push(neg);
         }
         
         parse_term_inner(&mut term, parser)?;
@@ -116,6 +123,11 @@ fn parse_term_inner(
             Some(TT::Group(_) | TT::Ident(_) | TT::Literal(_)) => {
                 parse_mul_subexpr(&mut term.mul_exprs, parser)?;
             }
+            Some(tt) if start_of_path(tt) => {
+                let path = parse_path(parser)?;
+
+                term.mul_exprs.push(parse_var_or_func(path, parser)?)
+            }
             Some(TT::Punct(p)) if p.as_char() == '*' => {
                 _ = parser.next();
                 parse_mul_subexpr(&mut term.mul_exprs, parser)?;
@@ -124,14 +136,16 @@ fn parse_term_inner(
                 _ = parser.next();
                 let mut rhs = Vec::new();
                 parse_mul_subexpr(&mut rhs, parser)?;
-                let [rhs] = <[_; 1]>::try_from(rhs).unwrap();
 
-                let remm = if let UnnormMulExpr::Constant(lit) = &rhs && bi_eq(lit, 1) {
+                let remm = if let [UnnormMulExpr::Constant(lit)] = &rhs[..] && bi_eq(lit, 1) {
                     // `X % 1 == X * 0` 
                     UnnormMulExpr::Constant(BigInt::ZERO)
                 } else {                
-                    let lhs = term.mul_exprs.drain(..).collect();
-                    UnnormMulExpr::FunctionCall(UnnormFunctionCall::Rem(lhs, rhs.into()))
+                    let lhs = UnnormPolynomialTerm { 
+                        mul_exprs: term.mul_exprs.drain(..).collect(),
+                    };
+                    let rhs = UnnormPolynomialTerm { mul_exprs: rhs };
+                    UnnormMulExpr::FunctionCall(UnnormFunctionCall::Rem(lhs, rhs))
                 };
 
                 term.mul_exprs.push(remm);
@@ -140,15 +154,22 @@ fn parse_term_inner(
                 _ = parser.next();
                 let mut rhs = Vec::new();
                 parse_mul_subexpr(&mut rhs, parser)?;
-                let [rhs] = <[_; 1]>::try_from(rhs).unwrap();
 
                 // `X / 1 == X` so nothing is added in that case
-                if !matches!(&rhs, UnnormMulExpr::Constant(lit) if !bi_eq(lit, 1)) {
-                    let lhs = term.mul_exprs.drain(..).collect();
+                if !matches!(&rhs[..], [UnnormMulExpr::Constant(lit)] if bi_eq(lit, 1)) {
+                    let lhs = UnnormPolynomialTerm { 
+                        mul_exprs: term.mul_exprs.drain(..).collect(),
+                    };
+                    let rhs = UnnormPolynomialTerm { mul_exprs: rhs };
                     term.mul_exprs.push(
-                        UnnormMulExpr::FunctionCall(UnnormFunctionCall::Div(lhs, rhs.into()))
+                        UnnormMulExpr::FunctionCall(UnnormFunctionCall::Div(lhs, rhs))
                     );
                 }
+            }
+            // ignore borrows
+            Some(TT::Punct(p)) if p.as_char() == '&' => {
+                _ = parser.next();
+                continue;
             }
             Some(tt) =>  {
                 if has_parsed_one {
@@ -186,6 +207,11 @@ fn parse_mul_subexpr(mul_exprs: &mut Vec<UnnormMulExpr>, parser: &mut Parser) ->
         Some(TT::Literal(lit)) => {
             mul_exprs.push(parse_int(lit.span(), &lit.to_string())?);
             _ = parser.next();
+        }
+        // ignore borrows
+        Some(TT::Punct(p)) if p.as_char() == '&' => {
+            _ = parser.next();
+            parse_mul_subexpr(mul_exprs, parser)?;
         }
         Some(TT::Punct(p)) if p.as_char() == '-' => {
             if let Some(neg) = parse_neg(parser) {
