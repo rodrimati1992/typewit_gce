@@ -2,7 +2,7 @@
 
 use crate::error::Error;
 
-use crate::used_proc_macro::{self, Delimiter, Punct, Spacing, Span, TokenTree as TT};
+use crate::used_proc_macro::{self, Delimiter, Group, Punct, Spacing, Span, TokenTree as TT};
 
 use crate::utils::bi_eq;
 
@@ -69,7 +69,7 @@ pub(crate) fn parse_polynomial(parser: &mut Parser) -> Result<UnnormPolynomial, 
         terms: Vec::new(),
     };
 
-    if let Some(TT::Group(group)) = parser.peek() && group.delimiter() == Delimiter::None {
+    if let Some(group) = opt_parse_group(parser, |g| g.delimiter() == Delimiter::None) {
         inner_parser = group.stream().into_iter().peekable();
         _ = parser.next();
         parser = &mut inner_parser;
@@ -80,13 +80,11 @@ pub(crate) fn parse_polynomial(parser: &mut Parser) -> Result<UnnormPolynomial, 
     }
 
     loop {
-        let poked = parser.peek();
-
         let mut term = UnnormPolynomialTerm {
             mul_exprs: Vec::new(),
         };
 
-        match poked {
+        match parser.peek() {
             Some(tt) if end_of_expr(tt) => {
                 break
             }
@@ -100,7 +98,7 @@ pub(crate) fn parse_polynomial(parser: &mut Parser) -> Result<UnnormPolynomial, 
         }
         if let Some(TT::Punct(p)) = parser.peek() 
         && p.as_char() == '-'
-        && let Some(neg) = parse_neg(parser)
+        && let Some(Signedness::Negative(neg)) = opt_parse_neg(parser)
         {
             term.mul_exprs.push(neg);
         }
@@ -119,123 +117,112 @@ fn parse_term_inner(
 ) -> Result<(), Error> {
     let mut has_parsed_one = false;
     loop {
-        match parser.peek() {
-            Some(TT::Group(_) | TT::Ident(_) | TT::Literal(_)) => {
-                parse_mul_subexpr(&mut term.mul_exprs, parser)?;
-            }
-            Some(tt) if start_of_path(tt) => {
-                let path = parse_path(parser)?;
+        if let Some(TT::Group(_) | TT::Ident(_) | TT::Literal(_)) = parser.peek() {
+            parse_mul_subexpr(&mut term.mul_exprs, parser)?;
+        } else if let Some(path) = opt_parse_path(parser)? { 
+            term.mul_exprs.push(parse_var_or_func(path, parser)?)
+        } else if opt_parse_punct(parser, |p| p.as_char() == '*') {
+            parse_mul_subexpr(&mut term.mul_exprs, parser)?;
+        } else if opt_parse_punct(parser, |p| p.as_char() == '%') {
+            let mut rhs = Vec::new();
+            parse_mul_subexpr(&mut rhs, parser)?;
 
-                term.mul_exprs.push(parse_var_or_func(path, parser)?)
-            }
-            Some(TT::Punct(p)) if p.as_char() == '*' => {
-                _ = parser.next();
-                parse_mul_subexpr(&mut term.mul_exprs, parser)?;
-            }
-            Some(TT::Punct(p)) if p.as_char() == '%' => {
-                _ = parser.next();
-                let mut rhs = Vec::new();
-                parse_mul_subexpr(&mut rhs, parser)?;
-
-                let remm = if let [UnnormMulExpr::Constant(lit)] = &rhs[..] && bi_eq(lit, 1) {
-                    // `X % 1 == X * 0` 
-                    UnnormMulExpr::Constant(BigInt::ZERO)
-                } else {                
-                    let lhs = UnnormPolynomialTerm { 
-                        mul_exprs: term.mul_exprs.drain(..).collect(),
-                    };
-                    let rhs = UnnormPolynomialTerm { mul_exprs: rhs };
-                    UnnormMulExpr::FunctionCall(UnnormFunctionCall::Rem(lhs, rhs))
+            let remm = if let [UnnormMulExpr::Constant(lit)] = &rhs[..] && bi_eq(lit, 1) {
+                // `X % 1 == X * 0` 
+                UnnormMulExpr::Constant(BigInt::ZERO)
+            } else {                
+                let lhs = UnnormPolynomialTerm { 
+                    mul_exprs: term.mul_exprs.drain(..).collect(),
                 };
+                let rhs = UnnormPolynomialTerm { mul_exprs: rhs };
+                UnnormMulExpr::FunctionCall(UnnormFunctionCall::Rem(lhs, rhs))
+            };
 
-                term.mul_exprs.push(remm);
-            }
-            Some(TT::Punct(p)) if p.as_char() == '/' => {
-                _ = parser.next();
-                let mut rhs = Vec::new();
-                parse_mul_subexpr(&mut rhs, parser)?;
+            term.mul_exprs.push(remm);
+        } else if opt_parse_punct(parser, |p| p.as_char() == '/') {
+            let mut rhs = Vec::new();
+            parse_mul_subexpr(&mut rhs, parser)?;
 
-                // `X / 1 == X` so nothing is added in that case
-                if !matches!(&rhs[..], [UnnormMulExpr::Constant(lit)] if bi_eq(lit, 1)) {
-                    let lhs = UnnormPolynomialTerm { 
-                        mul_exprs: term.mul_exprs.drain(..).collect(),
-                    };
-                    let rhs = UnnormPolynomialTerm { mul_exprs: rhs };
-                    term.mul_exprs.push(
-                        UnnormMulExpr::FunctionCall(UnnormFunctionCall::Div(lhs, rhs))
-                    );
-                }
+            // `X / 1 == X` so nothing is added in that case
+            if !matches!(&rhs[..], [UnnormMulExpr::Constant(lit)] if bi_eq(lit, 1)) {
+                let lhs = UnnormPolynomialTerm { 
+                    mul_exprs: term.mul_exprs.drain(..).collect(),
+                };
+                let rhs = UnnormPolynomialTerm { mul_exprs: rhs };
+                term.mul_exprs.push(
+                    UnnormMulExpr::FunctionCall(UnnormFunctionCall::Div(lhs, rhs))
+                );
             }
+        } else if opt_parse_punct(parser, |p| p.as_char() == '&') {
             // ignore borrows
-            Some(TT::Punct(p)) if p.as_char() == '&' => {
-                _ = parser.next();
-                continue;
-            }
-            Some(tt) =>  {
-                if has_parsed_one {
-                    return Ok(())
-                } else {
-                    return Err(Error::new(tt.span(), "empty polynomial term"))
-                }
-            }
-            None if !has_parsed_one => {
-                return Err(Error::new(Span::call_site(), "empty polynomial term"))
-            }
-            None => {
+            continue;
+        } else if let Some(tt) = parser.peek() {
+            if has_parsed_one {
                 return Ok(())
+            } else {
+                return Err(Error::new(tt.span(), "empty polynomial term"))
             }
+        } else if has_parsed_one {
+            return Ok(())
+        } else {
+            return Err(Error::new(Span::call_site(), "empty polynomial term"))
         }
 
         has_parsed_one = true;
     }
 }
 
+
+
 /// returns an error if there's no expression
 fn parse_mul_subexpr(mul_exprs: &mut Vec<UnnormMulExpr>, parser: &mut Parser) -> Result<(), Error> {
-    match parser.peek() {
-        Some(TT::Group(group)) if group.delimiter() == Delimiter::Parenthesis => {
-            let iter = &mut group.stream().into_iter().peekable();
-            _ = parser.next();
+    if let Some(group) = opt_parse_group(parser, |g| g.delimiter() == Delimiter::Parenthesis) {
+        let iter = &mut group.stream().into_iter().peekable();
 
-            mul_exprs.push(UnnormMulExpr::Parenthesis(parse_polynomial(iter)?));
-        }
-        Some(tt) if start_of_path(tt) => {
-            let path = parse_path(parser)?;
-
-            mul_exprs.push(parse_var_or_func(path, parser)?)
-        }
-        Some(TT::Literal(lit)) => {
-            mul_exprs.push(parse_int(lit.span(), &lit.to_string())?);
-            _ = parser.next();
-        }
+        mul_exprs.push(UnnormMulExpr::Parenthesis(parse_polynomial(iter)?));
+    } else if let Some(path) = opt_parse_path(parser)? {
+        mul_exprs.push(parse_var_or_func(path, parser)?)
+    } else if let Some(TT::Literal(lit)) = parser.peek() {
+        mul_exprs.push(parse_int(lit.span(), &lit.to_string())?);
+        _ = parser.next();
+    } else if opt_parse_punct(parser, |p| p.as_char() == '&') {
         // ignore borrows
-        Some(TT::Punct(p)) if p.as_char() == '&' => {
-            _ = parser.next();
-            parse_mul_subexpr(mul_exprs, parser)?;
+        parse_mul_subexpr(mul_exprs, parser)?;
+    } else if let Some(signedness) = opt_parse_neg(parser) {
+        if let Signedness::Negative(neg) = signedness {
+            mul_exprs.push(neg);
         }
-        Some(TT::Punct(p)) if p.as_char() == '-' => {
-            if let Some(neg) = parse_neg(parser) {
-                mul_exprs.push(neg);
-            }
-            parse_mul_subexpr(mul_exprs, parser)?;
-        }
-        Some(tt) => return Err(Error::new(tt.span(), "expected expression")),
-        None => return Err(Error::new(Span::call_site(), "expected expression")),
+        parse_mul_subexpr(mul_exprs, parser)?;
+    } else if let Some(tt) = parser.peek() {
+        return Err(Error::new(tt.span(), "expected expression"))
+    } else {
+        return Err(Error::new(Span::call_site(), "expected expression"))
     }
 
     Ok(())
 }
 
 
-fn parse_neg(parser: &mut Parser) -> Option<UnnormMulExpr> {
-    _ = parser.next();
-    let mut neg = -1;
-    while let Some(TT::Punct(p)) = parser.peek() && p.as_char() == '-' {
-        neg = -neg;
-        _ = parser.next();
-    }
+enum Signedness {
+    Positive,
+    Negative(UnnormMulExpr),
+}
 
-    (neg == -1).then(|| UnnormMulExpr::Constant(BigInt::from(neg)))    
+fn opt_parse_neg(parser: &mut Parser) -> Option<Signedness> {
+    if opt_parse_punct(parser, |p| p.as_char() == '-') {
+        let mut neg = -1;
+        while opt_parse_punct(parser, |p| p.as_char() == '-') {
+            neg = -neg;
+        }
+
+        Some(if neg == -1 {
+            Signedness::Negative(UnnormMulExpr::Constant(BigInt::from(neg)))
+        } else {
+            Signedness::Positive
+        })
+    } else {
+        None
+    }
 }
 
 
@@ -243,33 +230,58 @@ fn parse_var_or_func(
     name: String,
     parser: &mut Parser,
 ) -> Result<UnnormMulExpr, Error> {
-    match parser.peek() {
-        Some(TT::Group(group)) if group.delimiter() == Delimiter::Parenthesis => {
-            let iter = &mut group.stream().into_iter().peekable();
+    if let Some(group) = opt_parse_group(parser, |g| g.delimiter() == Delimiter::Parenthesis) {
+        let iter = &mut group.stream().into_iter().peekable();
 
-            let mut args = Vec::new();
+        let mut args = Vec::new();
 
-            while iter.peek().is_some() {
-                args.push(parse_polynomial(iter)?);
+        while iter.peek().is_some() {
+            args.push(parse_polynomial(iter)?);
 
-                match iter.peek() {
-                    None => break,
-                    Some(TT::Punct(p)) if p.as_char() == ',' => {}
-                    Some(tt) => return Err(Error::new(tt.span(), "expected comma"))
-                }
-                _ = iter.next();
+            match iter.peek() {
+                None => break,
+                Some(TT::Punct(p)) if p.as_char() == ',' => _ = iter.next(),
+                Some(tt) => return Err(Error::new(tt.span(), "expected comma"))
             }
-
-            // consume the parenthesis
-            _ = parser.next();
-
-            Ok(UnnormMulExpr::FunctionCall(UnnormFunctionCall::Other { name, args }))
         }
-        _ => {
-            Ok(UnnormMulExpr::Variable(name))
-        }
+
+        Ok(UnnormMulExpr::FunctionCall(UnnormFunctionCall::Other { name, args }))
+    } else {
+        Ok(UnnormMulExpr::Variable(name))
     }
 }
+
+fn opt_parse_punct(parser: &mut Parser, pred: impl Fn(&Punct) -> bool) -> bool {
+    if let Some(TT::Punct(p)) = parser.peek() && pred(p) {
+        _ = parser.next();
+        true
+    } else {
+        false
+    }
+}
+
+fn opt_parse_group(
+    parser: &mut Parser,
+    pred: impl Fn(&Group) -> bool,
+) -> Option<Group> {
+    if let Some(TT::Group(p)) = parser.peek()
+    && pred(p)
+    {
+        let Some(TT::Group(g)) = parser.next() else { unreachable!() };
+        Some(g)
+    } else {
+        None
+    }
+}
+
+fn opt_parse_path(parser: &mut Parser) -> Result<Option<String>, Error> {
+    if parser.peek().is_some_and(start_of_path) { 
+        parse_path(parser).map(Some)
+    } else {
+        Ok(None)
+    }
+}
+
 
 /// Panics if the first token isn't an Ident
 fn start_of_path(tt: &TT) -> bool {
