@@ -1,8 +1,11 @@
-use crate::parsing_unnorm_polynomial::{
-    UnnormPolynomial,
-    UnnormPolynomialTerm,
-    UnnormMulExpr,
-    UnnormFunctionCall,
+use crate::{
+    parsing_unnorm_polynomial::{
+        UnnormPolynomial,
+        UnnormPolynomialTerm,
+        UnnormMulExpr,
+        UnnormFunctionCall,
+    },
+    unevaled_expr::UnevaledExpr,
 };
 
 use num_bigint::BigInt;
@@ -20,15 +23,16 @@ mod normal_tests;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct Polynomial {
-    pub(crate) terms: BTreeMap<BTreeMap<VarOrFunc, Power>, Coefficient>,
+    pub(crate) terms: BTreeMap<BTreeMap<Varlike, Power>, Coefficient>,
 }
 
 type Coefficient = BigInt;
 type Power = BigInt;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) enum VarOrFunc {
+pub(crate) enum Varlike {
     Variable(Rc<str>),
+    UnevaledExpr(Rc<UnevaledExpr>),
     FunctionCall(FunctionCall),
 }
 
@@ -71,7 +75,7 @@ pub(crate) fn normalize_polynomial(upoly: UnnormPolynomial) -> Polynomial {
 
 
 
-fn insert_term(poly: &mut Polynomial, vars: BTreeMap<VarOrFunc, Power>, coeff: Coefficient) {
+fn insert_term(poly: &mut Polynomial, vars: BTreeMap<Varlike, Power>, coeff: Coefficient) {
     match poly.terms.entry(vars) {
         MapEntry::Vacant(en) => _ = en.insert(coeff),
         MapEntry::Occupied(en) => *en.into_mut() += coeff,
@@ -82,12 +86,10 @@ fn insert_term(poly: &mut Polynomial, vars: BTreeMap<VarOrFunc, Power>, coeff: C
 // normalizes one polynomial term, outputting its expanded polynomials to `out`
 fn normalize_term(upoly: UnnormPolynomialTerm, out: &mut Polynomial) {
     let mut coefficient = BigInt::from(1);
-    let mut var_fns = BTreeMap::<VarOrFunc, Power>::new();
+    let mut var_fns = BTreeMap::<Varlike, Power>::new();
     let mut norm_sub = Vec::<Polynomial>::new();
 
     unexpanded_normalize_term(&mut coefficient, &mut var_fns, &mut norm_sub, upoly);
-
-    println!("{norm_sub:?}");
 
     let mut accum_poly = Polynomial {
         terms: BTreeMap::from([(var_fns, coefficient)]),
@@ -124,7 +126,7 @@ fn normalize_term(upoly: UnnormPolynomialTerm, out: &mut Polynomial) {
 
 fn unexpanded_normalize_term(
     coefficient: &mut BigInt,
-    var_fns: &mut BTreeMap<VarOrFunc, Power>,
+    var_fns: &mut BTreeMap<Varlike, Power>,
     norm_sub: &mut Vec<Polynomial>,
     upoly: UnnormPolynomialTerm, 
 ) {
@@ -134,7 +136,13 @@ fn unexpanded_normalize_term(
                 *coefficient *= mulled_over;
             }
             UnnormMulExpr::Variable(var) => {
-                match var_fns.entry(VarOrFunc::Variable(var.into())) {
+                match var_fns.entry(Varlike::Variable(var.into())) {
+                    MapEntry::Vacant(en) => _ = en.insert(1.into()),
+                    MapEntry::Occupied(en) => *en.into_mut() += 1,
+                }
+            }
+            UnnormMulExpr::UnevaledExpr(expr) => {
+                match var_fns.entry(Varlike::UnevaledExpr(expr.into())) {
                     MapEntry::Vacant(en) => _ = en.insert(1.into()),
                     MapEntry::Occupied(en) => *en.into_mut() += 1,
                 }
@@ -167,7 +175,7 @@ fn unexpanded_normalize_term(
                     }
                 };
 
-                match var_fns.entry(VarOrFunc::FunctionCall(key)) {
+                match var_fns.entry(Varlike::FunctionCall(key)) {
                     MapEntry::Vacant(en) => _ = en.insert(1.into()),
                     MapEntry::Occupied(en) => *en.into_mut() += 1,
                 }

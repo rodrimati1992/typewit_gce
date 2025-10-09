@@ -21,6 +21,20 @@ fn variable(s: &str) -> UME {
 
 
 #[test]
+fn numeric_literals() {
+    assert_eq!(parse("0x10u32").unwrap(), vec![vec![constant(16)]]);
+    assert_eq!(parse("0x10_u32").unwrap(), vec![vec![constant(16)]]);
+    assert_eq!(parse("0x1_0_u32").unwrap(), vec![vec![constant(16)]]);
+    assert_eq!(parse("0x_1_0_u32").unwrap(), vec![vec![constant(16)]]);
+    
+    assert_eq!(parse("0b10i32").unwrap(), vec![vec![constant(2)]]);
+    assert_eq!(parse("0b11_i32").unwrap(), vec![vec![constant(3)]]);
+    
+    assert_eq!(parse("-53_i32").unwrap(), vec![vec![constant(-1), constant(53)]]);
+    assert_eq!(parse("-76i32").unwrap(), vec![vec![constant(-1), constant(76)]]);
+}
+
+#[test]
 fn basic_arith_ops() {
     for s in [
         " 1+1-2+1*B/C%D*20",

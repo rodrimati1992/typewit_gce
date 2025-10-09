@@ -1,13 +1,15 @@
 #![deny(unused_results)]
 
-use crate::error::Error;
 
-use crate::used_proc_macro::{self, Delimiter, Group, Punct, Spacing, Span, TokenTree as TT};
+use crate::{
+    error::Error,
+    used_proc_macro::{self, Delimiter, Group, Punct, Spacing, Span, TokenTree as TT},
+    unevaled_expr::UnevaledExpr,
+    utils::bi_eq,
+};
 
-use crate::utils::bi_eq;
 
 use num_bigint::BigInt;
-use num_traits::Num;
 
 
 #[cfg(test)]
@@ -28,6 +30,7 @@ pub(crate) struct UnnormPolynomialTerm {
 pub(crate) enum UnnormMulExpr {
     Constant(BigInt),
     Variable(String),
+    UnevaledExpr(UnevaledExpr),
     FunctionCall(UnnormFunctionCall),
     Parenthesis(UnnormPolynomial),
 }
@@ -180,6 +183,8 @@ fn parse_mul_subexpr(mul_exprs: &mut Vec<UnnormMulExpr>, parser: &mut Parser) ->
         let iter = &mut group.stream().into_iter().peekable();
 
         mul_exprs.push(UnnormMulExpr::Parenthesis(parse_polynomial(iter)?));
+    } else if let Some(group) = opt_parse_group(parser, |g| g.delimiter() == Delimiter::Brace) {
+        mul_exprs.push(UnnormMulExpr::UnevaledExpr(UnevaledExpr::new(group.stream())));
     } else if let Some(path) = opt_parse_path(parser)? {
         mul_exprs.push(parse_var_or_func(path, parser)?)
     } else if let Some(TT::Literal(lit)) = parser.peek() {
@@ -316,21 +321,8 @@ fn parse_path(parser: &mut Parser) -> Result<String, Error> {
 }
 
 fn parse_int(span: Span, str: &str) -> Result<UnnormMulExpr, Error> {
-    let str = str.trim().replace("_", "");
-
-    let (base, digits) = if let Some(stripped) = str.strip_prefix("0b") {
-        (2, stripped)
-    } else if let Some(stripped) = str.strip_prefix("0o") {
-        (8, stripped)
-    } else if let Some(stripped) = str.strip_prefix("0x") {
-        (16, stripped)
-    } else {
-        (10, &*str)
-    };
-
-    BigInt::from_str_radix(digits, base)
+    crate::unevaled_expr::parse_bigint(span, str)
         .map(UnnormMulExpr::Constant)
-        .map_err(|_| Error::new(span, "could not parse as integer"))
 }
 
 fn end_of_expr(tt: &TT) -> bool {

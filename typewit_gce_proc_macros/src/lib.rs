@@ -11,6 +11,7 @@ use crate::{
 mod error;
 mod parsing_unnorm_polynomial;
 mod utils;
+mod unevaled_expr;
 mod normalization;
 
 
