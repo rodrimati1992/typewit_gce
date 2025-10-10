@@ -15,6 +15,24 @@ mod unevaled_expr;
 mod normalization;
 
 
+#[derive(Copy, Clone)]
+enum SimplifyFraction {
+    Yes,
+    #[cfg(test)]
+    No,
+}
+
+impl SimplifyFraction {
+    fn is_no(self) -> bool {
+        !matches!(self, Self::Yes)
+    }
+    fn is_yes(self) -> bool {
+        matches!(self, Self::Yes)
+    }
+}
+
+
+
 fn parse_crate_token(tt: Option<TT>) -> CrateToken {
     match tt {
         Some(TT::Group(group)) if group.delimiter() == Delimiter::Parenthesis => {
@@ -31,12 +49,13 @@ fn parse_crate_token(tt: Option<TT>) -> CrateToken {
 
 fn __parse_polynomials(
     crate_path: &CrateToken,
+    simplify_rhs: SimplifyFraction,
     iter: &mut std::iter::Peekable<used_proc_macro::token_stream::IntoIter>,
 ) -> Result<(Polynomial, Polynomial), (CrateToken, crate::error::Error)> {
 
     let lhs_poly = parsing_unnorm_polynomial::parse_polynomial(iter)
         .map_err(|e| (crate_path.clone(), e))
-        .map(normalization::normalize_polynomial)?;
+        .map(|x| normalization::normalize_polynomial(x, SimplifyFraction::Yes))?;
 
     if let Some(TT::Punct(p)) = iter.peek()
     && let ',' | '=' = p.as_char()
@@ -46,7 +65,7 @@ fn __parse_polynomials(
 
     let rhs_poly = parsing_unnorm_polynomial::parse_polynomial(iter)
         .map_err(|e| (crate_path.clone(), e))
-        .map(normalization::normalize_polynomial)?;
+        .map(|x| normalization::normalize_polynomial(x, simplify_rhs))?;
 
     Ok((lhs_poly, rhs_poly))
 }
@@ -56,7 +75,7 @@ fn __assert_equal(input_tokens: TokenStream) -> Result<(), (CrateToken, crate::e
 
     let crate_path = parse_crate_token(iter.next());
 
-    let (lhs_poly, rhs_poly) = __parse_polynomials(&crate_path, iter)?;
+    let (lhs_poly, rhs_poly) = __parse_polynomials(&crate_path, SimplifyFraction::Yes, iter)?;
 
     if lhs_poly == rhs_poly {
         Ok(())

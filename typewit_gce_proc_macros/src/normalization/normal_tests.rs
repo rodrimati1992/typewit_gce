@@ -1,10 +1,16 @@
-use crate::error::Error;
-use crate::utils::CrateToken;
+use crate::{
+    error::Error,
+    utils::CrateToken,
+    SimplifyFraction,
+};
 
 use super::Polynomial;
 
 #[track_caller]
-fn parse(s: &str) -> Result<(Polynomial, Polynomial), Error> {
+pub(super) fn parse(
+    s: &str, 
+    simplify_rhs: SimplifyFraction,
+) -> Result<(Polynomial, Polynomial), Error> {
     let input_tokens: crate::used_proc_macro::TokenStream = s.parse().unwrap();
     let iter = &mut input_tokens.into_iter().peekable();
 
@@ -12,19 +18,19 @@ fn parse(s: &str) -> Result<(Polynomial, Polynomial), Error> {
         krate: "crate".parse().unwrap()
     };
 
-    crate::__parse_polynomials(&crate_token, iter).map_err(|(_, e)| e)
+    crate::__parse_polynomials(&crate_token, simplify_rhs, iter).map_err(|(_, e)| e)
 }
 
 #[track_caller]
 fn asse_eq(s: &str) {
-    let (l, r) = parse(s).unwrap();
+    let (l, r) = parse(s, SimplifyFraction::Yes).unwrap();
 
     assert_eq!(l, r, "{s}");
 }
 
 #[track_caller]
 fn asse_ne(s: &str) {
-    let (l, r) = parse(s).unwrap();
+    let (l, r) = parse(s, SimplifyFraction::Yes).unwrap();
 
     assert_ne!(l, r, "{s}");
 }
@@ -67,25 +73,6 @@ fn test_commutative() {
 #[test]
 fn test_noncommutative() {
     asse_ne("x - n = n - x");
-}
-
-#[test]
-fn test_rem() {
-    asse_eq("x * 2 % 3 = 2 * x % 3");
-    asse_eq("y * (x * 2 % 3) = 2 * x % 3 * y");
-    
-    asse_ne("x * 3 % 3 = 0");
-}
-
-#[test]
-fn test_div() {
-    asse_eq("x * 2 / 3 = 2 * x / 3");
-    asse_eq("x * 2 / -3 = 2 * x / (-3)");
-    asse_eq("x * 2 / 3 * y = y * (2 * x / 3)");
-    
-    asse_ne("3 / 3 = 1");
-    asse_ne("x / 3 * 3 = x");
-    asse_ne("x / -1 = -x");
 }
 
 #[test]
