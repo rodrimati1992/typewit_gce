@@ -1,0 +1,29 @@
+[package]
+name = "typewit_gce"
+version = "0.1.0"
+authors = ["rodrimati1992 <rodrimatt1985@gmail.com>"]
+rust-version = "1.90.0"
+edition = "2024"
+license = "Zlib"
+description = "for coercing equal generic const arguments"
+documentation = "https://docs.rs/typewit_gce/"
+readme="./README.md"
+keywords = ["const_fn", "GADT", "type_witness", "type-equality", "refl"]
+categories = ["no-std", "rust-patterns"]
+repository = "https://github.com/rodrimati1992/typewit_gce/"
+include = [
+    "Cargo.toml", 
+    "src/**/*.rs", 
+    "./README.md",
+    "LICENSE-ZLIB.md", 
+]
+
+[workspace]
+
+[dependencies.typewit_gce_proc_macros]
+version = "=0.1.0"
+path = "./typewit_gce_proc_macros"
+
+[dependencies.typewit]
+version = "1.14"
+features = ["rust_stable"]

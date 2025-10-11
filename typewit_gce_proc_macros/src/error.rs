@@ -24,7 +24,14 @@ impl Error {
 
         let mut out = TokenStream::new();
 
-        out.extend(krate.krate);
+        let krate = krate.krate.clone()
+            .into_iter()
+            .map(|mut k| {
+                k.set_span(k.span().located_at(Span::call_site()));
+                k
+            });
+
+        out.extend(krate);
         out.extend(crate::utils::colon2_token(span));
         out.extend(crate::utils::ident_token("__", span));
         out.extend(crate::utils::colon2_token(span));
@@ -35,7 +42,7 @@ impl Error {
 
         let msg_paren = crate::utils::paren(span, |ts| {
             let mut msg = Literal::string(error);
-            msg.set_span(self.span);
+            msg.set_span(span);
             let msg = TokenTree::from(msg);
             ts.extend(once(msg))
         });

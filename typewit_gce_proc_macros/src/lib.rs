@@ -52,7 +52,6 @@ fn __parse_polynomials(
     simplify_rhs: SimplifyFraction,
     iter: &mut std::iter::Peekable<used_proc_macro::token_stream::IntoIter>,
 ) -> Result<(Polynomial, Polynomial), (CrateToken, crate::error::Error)> {
-
     let lhs_poly = parsing_unnorm_polynomial::parse_polynomial(iter)
         .map_err(|e| (crate_path.clone(), e))
         .map(|x| normalization::normalize_polynomial(x, SimplifyFraction::Yes))?;
