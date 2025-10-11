@@ -20,6 +20,6 @@ proc-macro = true
 num-bigint = "0.4"
 num-traits = "0.2.19"
 num-integer = "0.1.46"
-proc-macro2 = "1.0.100"
+proc-macro2 = "1.0.101"
 
 

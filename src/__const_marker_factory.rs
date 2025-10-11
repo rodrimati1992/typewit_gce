@@ -35,7 +35,10 @@ macro_rules! impls {
                 self
             ) -> TypeEq<cm::$marker<L>, cm::$marker<R>> {
                 const { 
-                    <cm::$marker<L> as ConstMarkerEq>::Equals::VAL.unwrap_eq() 
+                    <cm::$marker<L> as ConstMarkerEq>::Equals::VAL.expect_eq(
+                        "`typewit_gce::gce_int_eq` was passed a const expression whose value \
+                          can be different in different uses"
+                    ) 
                 }
             }
         }

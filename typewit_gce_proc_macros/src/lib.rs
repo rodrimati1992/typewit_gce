@@ -1,6 +1,6 @@
 use proc_macro2 as used_proc_macro;
 
-use used_proc_macro::{Delimiter, Span, TokenStream, TokenTree as TT};
+use used_proc_macro::{Delimiter, Group, Span, TokenStream, TokenTree as TT};
 
 use crate::{
     normalization::Polynomial,
@@ -94,3 +94,55 @@ pub fn assert_equal(input_tokens: proc_macro::TokenStream) -> proc_macro::TokenS
         Err((crate_path, e)) => e.to_compile_error(crate_path).into(),
     }
 }
+
+#[doc(hidden)]
+#[proc_macro]
+pub fn call_equality_proof_fn(input_tokens: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    use std::iter::once;
+
+    let span = Span::call_site();
+
+    let mut iter = TokenStream::from(input_tokens).into_iter();
+    
+    let Some(recv @ TT::Ident(_)) = iter.next() else { unreachable!("internal macro") };
+    let Some(TT::Group(group_lhs)) = iter.next() else { unreachable!("internal macro") };
+    let Some(TT::Group(group_rhs)) = iter.next() else { unreachable!("internal macro") };
+
+    let mut out = TokenStream::new();
+
+    fn get_first_last_spans(ts: TokenStream) -> (Span, Span) {
+        let mut iter = ts.into_iter().map(|tt| tt.span());
+
+        match (iter.next(), iter.last()) {
+            (Some(first), Some(last)) => (first, last),
+            (Some(first), None) => (first, first),
+            _ => (Span::call_site(), Span::call_site()),
+        }
+    }
+
+    let lhs_def_span = group_lhs.span();
+    let (lhs_start_span, lhs_end_span) = get_first_last_spans(group_lhs.stream());
+    let rhs_def_span = group_rhs.span();
+    let (rhs_start_span, rhs_end_span) = get_first_last_spans(group_rhs.stream());
+
+    fn braced_expr(ts: TokenStream, start_span: Span, end_span: Span, def_span: Span) -> TT {
+        let mut group = Group::new(Delimiter::Brace, ts);
+        let span = start_span.join(end_span).unwrap_or(def_span);
+        group.set_span(span);
+        TT::Group(group)
+    }
+
+    out.extend(once(recv));
+    out.extend(crate::utils::punct_token('.', span));
+    out.extend(crate::utils::ident_token("get_equality_proof", span));
+    out.extend(crate::utils::colon2_token(span));
+    out.extend(crate::utils::punct_token('<', span));
+    out.extend(once(braced_expr(group_lhs.stream(), lhs_start_span, lhs_end_span, lhs_def_span)));
+    out.extend(crate::utils::punct_token(',', span));
+    out.extend(once(braced_expr(group_rhs.stream(), rhs_start_span, rhs_end_span, rhs_def_span)));
+    out.extend(crate::utils::punct_token('>', span));
+    out.extend(once(crate::utils::paren(span, |_| {})));
+
+    out.into()
+}
+

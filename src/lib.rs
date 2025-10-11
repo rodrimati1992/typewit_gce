@@ -20,6 +20,9 @@
 
 extern crate typewit_gce_proc_macros;
 
+pub use typewit;
+
+#[doc(no_inline)]
 pub use typewit::*;
 
 
@@ -38,6 +41,6 @@ pub mod __ {
         __const_marker_factory::__ConstMarkerFactory,
     };
 
-    pub use typewit_gce_proc_macros::assert_equal;
+    pub use typewit_gce_proc_macros::{assert_equal, call_equality_proof_fn};
 
 }
