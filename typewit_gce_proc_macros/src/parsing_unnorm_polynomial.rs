@@ -179,7 +179,10 @@ fn parse_term_inner(
 
 /// returns an error if there's no expression
 fn parse_mul_subexpr(mul_exprs: &mut Vec<UnnormMulExpr>, parser: &mut Parser) -> Result<(), Error> {
-    if let Some(group) = opt_parse_group(parser, |g| g.delimiter() == Delimiter::Parenthesis) {
+    if let Some(group) = opt_parse_group(
+        parser, 
+        |g| matches!(g.delimiter(), Delimiter::Parenthesis | Delimiter::None),
+    ) {
         let iter = &mut group.stream().into_iter().peekable();
 
         mul_exprs.push(UnnormMulExpr::Parenthesis(parse_polynomial(iter)?));
