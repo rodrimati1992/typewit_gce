@@ -91,7 +91,7 @@ mod none_delimited_tests;
 /// #![feature(generic_const_exprs)]
 /// use typewit_gce::{Identity, TypeEq, gce_int_eq};
 /// 
-/// fn swap_add<const A: usize, const B: usize>(array: [u8; A + B]) -> [u8; B + A]
+/// const fn swap_add<const A: usize, const B: usize>(array: [u8; A + B]) -> [u8; B + A]
 /// where
 ///     // emulates a `[u8; A + B] == [u8; B + A]` bound
 ///     [u8; A + B]: Identity<Type = [u8; B + A]>
@@ -101,7 +101,7 @@ mod none_delimited_tests;
 /// }
 /// 
 /// // same as the above function
-/// fn swap_add_b<const A: usize, const B: usize>(array: [u8; A + B]) -> [u8; B + A]
+/// const fn swap_add_b<const A: usize, const B: usize>(array: [u8; A + B]) -> [u8; B + A]
 /// where
 ///     // no constraints required!
 /// {
@@ -149,7 +149,7 @@ mod none_delimited_tests;
 /// // fails to compile on this call!
 /// assert_eq!(dubious_api::<2, 4>([]), [3]);
 /// 
-/// fn dubious_api<const A: usize, const B: usize>(array: [u8; A / B]) -> [u8; (A + 2) / B] {
+/// const fn dubious_api<const A: usize, const B: usize>(array: [u8; A / B]) -> [u8; (A + 2) / B] {
 ///     // const assert that `A / B` and `(A + 2) / B` are the same
 ///     // causes a compilation error if this fn is called and they're not the same!
 ///     let len_eq = const { CmEquals::<Usize<{A / B}>, Usize<{(A + 2) / B}>>::VAL.unwrap_eq() };
@@ -186,7 +186,7 @@ mod none_delimited_tests;
 /// use typewit_gce::{TypeEq, gce_int_eq};
 /// 
 /// // same API as the above example
-/// fn dubious_api<const A: usize, const B: usize>(array: [u8; A / B]) -> [u8; (A + 2) / B] {
+/// const fn dubious_api<const A: usize, const B: usize>(array: [u8; A / B]) -> [u8; (A + 2) / B] {
 ///     // errors because the expressions are not always equal
 ///     TypeEq::NEW.in_array(gce_int_eq!(A / B, (A + 2) / B)).to_right(array)
 /// }
@@ -291,7 +291,7 @@ mod none_delimited_tests;
 /// 
 /// assert_eq!(commutative_add::<3, 2>([3, 5, 8, 13, 21]), [3, 5, 8, 13, 21]);
 /// 
-/// fn commutative_add<const N: usize, const M: usize>(arr: [u8; N + M]) -> [u8; M + N] {
+/// const fn commutative_add<const N: usize, const M: usize>(arr: [u8; N + M]) -> [u8; M + N] {
 ///     TypeEq::NEW.in_array(gce_int_eq!(N + M, M + N)).to_right(arr)
 /// }
 /// 
@@ -301,21 +301,21 @@ mod none_delimited_tests;
 /// assert_eq!(sub_cancels_out::<5, 2>([3, 5]), [3, 5]);
 /// assert_eq!(sub_cancels_out::<8, 2>([3, 5]), [3, 5]);
 /// 
-/// fn sub_cancels_out<const N: usize, const M: usize>(arr: [u8; N - N + M]) -> [u8; M] {
+/// const fn sub_cancels_out<const N: usize, const M: usize>(arr: [u8; N - N + M]) -> [u8; M] {
 ///     TypeEq::NEW.in_array(gce_int_eq!(N - N + M, M)).to_right(arr)
 /// }
 /// 
 /// 
 /// assert_eq!(commutative_mul::<3, 2>([3, 5, 8, 13, 21, 34]), [3, 5, 8, 13, 21, 34]);
 /// 
-/// fn commutative_mul<const N: usize, const M: usize>(arr: [u8; N * M]) -> [u8; M * N] {
+/// const fn commutative_mul<const N: usize, const M: usize>(arr: [u8; N * M]) -> [u8; M * N] {
 ///     TypeEq::NEW.in_array(gce_int_eq!(N * M, M * N)).to_right(arr)
 /// }
 /// 
 /// 
 /// assert_eq!(distributive_mul::<2, 1>([3, 5, 8, 13]), [3, 5, 8, 13]);
 /// 
-/// fn distributive_mul<const N: usize, const M: usize>(
+/// const fn distributive_mul<const N: usize, const M: usize>(
 ///     arr: [u8; N * (1 + M)]
 /// ) -> [u8; N + M * N] {
 ///     TypeEq::NEW.in_array(gce_int_eq!(N * (1 + M), N + M * N)).to_right(arr)
@@ -327,7 +327,7 @@ mod none_delimited_tests;
 /// assert_eq!(simplify_div::<3>([]), []);
 /// assert_eq!(simplify_div::<4>([]), []);
 /// 
-/// fn simplify_div<const N: usize>(
+/// const fn simplify_div<const N: usize>(
 ///     arr: [u8; (3 * N + 6) / (3 * N * N)]
 /// ) -> [u8; (N + 2) / (N * N)] {
 ///     let len_te = gce_int_eq!((3 * N + 6) / (3 * N * N), (N + 2) / (N * N));
@@ -339,7 +339,7 @@ mod none_delimited_tests;
 /// assert_eq!(extract_div::<2>([3]), [3]);
 /// assert_eq!(extract_div::<3>([3]), [3]);
 /// 
-/// fn extract_div<const N: usize>(arr: [u8; (N + 1) / N]) -> [u8; 1 + 1 / N] {
+/// const fn extract_div<const N: usize>(arr: [u8; (N + 1) / N]) -> [u8; 1 + 1 / N] {
 ///     TypeEq::NEW.in_array(gce_int_eq!((N + 1) / N, 1 + 1 / N)).to_right(arr)
 /// }
 /// 
@@ -350,12 +350,11 @@ macro_rules! gce_int_eq {
     ($lhs:expr, $rhs:expr $(, $ty:ty)? $(,)?) => {{
         $crate::__::assert_equal!{($crate) $lhs , $rhs}
 
-        let marker;
+        let mut marker = $crate::__GceIntEqHelper::NEW;
         if false {
-            marker = $crate::__gce_int_eq__infer_if_no_type!{$($ty)?, $lhs, $rhs};
+            $crate::__gce_int_eq__infer_if_no_type!{$($ty)?, marker, $lhs, $rhs};
             marker.infer_from_return()
         } else {
-            marker = $crate::__::__ConstMarkerFactory::NEW;
             $crate::__::call_equality_proof_fn!(marker $lhs $rhs)
         }
     }};
@@ -364,10 +363,10 @@ macro_rules! gce_int_eq {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __gce_int_eq__infer_if_no_type {
-    (, $lhs:expr, $rhs:expr) => { 
-        $crate::__::__ConstMarkerFactory::new(&$lhs, &$rhs) 
+    (, $marker:ident, $lhs:expr, $rhs:expr) => { 
+        $marker = $marker.infer_from_arg(&$lhs, &$rhs);
     };
-    ($ty:ty, $lhs:expr, $rhs:expr) => {
-        $crate::__::__ConstMarkerFactory::<$ty>::NEW
+    ($ty:ty, $marker:ident, $lhs:expr, $rhs:expr) => {
+        $marker = $crate::__GceIntEqHelper::<$ty, _, _>::NEW
     };
 }

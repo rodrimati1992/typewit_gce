@@ -1,0 +1,84 @@
+error[E0308]: mismatched types
+ --> tests/misc_tests/type_failures_ui/mismatched_types-err.rs:5:9
+  |
+5 |     _ = gce_int_eq!(0u8, 0u16);
+  |         ^^^^^^^^^^^^^^^^^^^^^^
+  |         |
+  |         expected `&u8`, found `&u16`
+  |         arguments to this method are incorrect
+  |
+  = note: expected reference `&u8`
+             found reference `&u16`
+note: method defined here
+ --> src/./root_module_hidden_items.rs
+  |
+  |         pub const fn infer_from_arg(self, _: &T, _: &T) -> Self {
+  |                      ^^^^^^^^^^^^^^
+  = note: this error originates in the macro `$crate::__gce_int_eq__infer_if_no_type` which comes from the expansion of the macro `gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0271]: type mismatch resolving `<Usize<_> as ConstMarker>::Of == u32`
+  --> tests/misc_tests/type_failures_ui/mismatched_types-err.rs:11:41
+   |
+11 |     let _: TypeEq<Usize<_>, Usize<_>> = gce_int_eq!(0, 0, u32);
+   |                                         ^^^^^^^^^^^^^^^^^^^^^^ expected `u32`, found `usize`
+   |
+   = note: required for `Usize<_>` to implement `ConstMarkerEqOf<u32>`
+note: required by a bound in `typewit_gce::_::<impl __GceIntEqHelper<T, L, R>>::NEW`
+  --> src/./root_module_hidden_items.rs
+   |
+   |         L: ConstMarkerEqOf<T>,
+   |            ^^^^^^^^^^^^^^^^^^ required by this bound in `_::<impl __GceIntEqHelper<T, L, R>>::NEW`
+...
+   |         pub const NEW: Self = {
+   |                   --- required by a bound in this associated constant
+   = note: this error originates in the macro `gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0599]: no method named `get_equality_proof` found for struct `__GceIntEqHelper<u32, Usize<_>, Usize<_>>` in the current scope
+  --> tests/misc_tests/type_failures_ui/mismatched_types-err.rs:11:41
+   |
+11 |     let _: TypeEq<Usize<_>, Usize<_>> = gce_int_eq!(0, 0, u32);
+   |                                         ^^^^^^^^^^^^^^^^^^^^^^ method not found in `__GceIntEqHelper<u32, Usize<_>, Usize<_>>`
+   |
+   = note: the method was found for
+           - `__GceIntEqHelper<i128, I128<L_VAL>, I128<R_VAL>>`
+           - `__GceIntEqHelper<i16, I16<L_VAL>, I16<R_VAL>>`
+           - `__GceIntEqHelper<i32, I32<L_VAL>, I32<R_VAL>>`
+           - `__GceIntEqHelper<i64, I64<L_VAL>, I64<R_VAL>>`
+           and 8 more types
+   = note: this error originates in the macro `$crate::__::call_equality_proof_fn` which comes from the expansion of the macro `gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0308]: mismatched types
+ --> tests/misc_tests/type_failures_ui/mismatched_types-err.rs:5:26
+  |
+5 |     _ = gce_int_eq!(0u8, 0u16);
+  |                          ^^^^ expected `u8`, found `u16`
+  |
+help: change the type of the numeric literal from `u16` to `u8`
+  |
+5 -     _ = gce_int_eq!(0u8, 0u16);
+5 +     _ = gce_int_eq!(0u8, 0u8);
+  |
+
+error[E0308]: mismatched types
+ --> tests/misc_tests/type_failures_ui/mismatched_types-err.rs:8:21
+  |
+8 |     _ = gce_int_eq!(0u8, 0u16, u32);
+  |                     ^^^ expected `u32`, found `u8`
+  |
+help: change the type of the numeric literal from `u8` to `u32`
+  |
+8 -     _ = gce_int_eq!(0u8, 0u16, u32);
+8 +     _ = gce_int_eq!(0u32, 0u16, u32);
+  |
+
+error[E0308]: mismatched types
+ --> tests/misc_tests/type_failures_ui/mismatched_types-err.rs:8:26
+  |
+8 |     _ = gce_int_eq!(0u8, 0u16, u32);
+  |                          ^^^^ expected `u32`, found `u16`
+  |
+help: change the type of the numeric literal from `u16` to `u32`
+  |
+8 -     _ = gce_int_eq!(0u8, 0u16, u32);
+8 +     _ = gce_int_eq!(0u8, 0u32, u32);
+  |

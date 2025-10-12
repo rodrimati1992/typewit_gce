@@ -1,0 +1,12 @@
+error[E0034]: multiple applicable items in scope
+ --> tests/misc_tests/type_failures_ui/failed_type_inference-err.rs:2:9
+  |
+2 |     _ = typewit_gce::gce_int_eq!(0, 0);
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ multiple `get_equality_proof` found
+  |
+  = note: candidate #1 is defined in an impl for the type `__GceIntEqHelper<i128, I128<L_VAL>, I128<R_VAL>>`
+  = note: candidate #2 is defined in an impl for the type `__GceIntEqHelper<i16, I16<L_VAL>, I16<R_VAL>>`
+  = note: candidate #3 is defined in an impl for the type `__GceIntEqHelper<i32, I32<L_VAL>, I32<R_VAL>>`
+  = note: candidate #4 is defined in an impl for the type `__GceIntEqHelper<i64, I64<L_VAL>, I64<R_VAL>>`
+  = note: and 8 others
+  = note: this error originates in the macro `$crate::__::call_equality_proof_fn` which comes from the expansion of the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
