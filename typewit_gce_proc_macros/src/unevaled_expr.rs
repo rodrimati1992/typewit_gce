@@ -20,6 +20,10 @@ impl UnevaledExpr {
         Self(out)
     }
 
+    pub(crate) fn as_str(&self) -> &str {
+        &self.0
+    }
+
     fn new_inner(out: &mut String, ts: TokenStream) {
         for tt in ts {
             match tt {

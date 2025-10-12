@@ -29,6 +29,9 @@ mod normal_tests;
 #[cfg(test)]
 mod div_rem_tests;
 
+#[cfg(test)]
+mod test_interpreter;
+
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct Polynomial {
