@@ -20,7 +20,18 @@ fn expr_metavariable_compiles() {
     testcase!{func(), func()}
 }
 
+#[test]
+fn lit_metavariable_compiles() {
+    macro_rules! testcase {
+        ($l:literal, $r:literal) => (
+            _ = gce_int_eq!($l, $r);
+            _ = gce_int_eq!($l + 1, $r + 1);
+            _ = gce_int_eq!(3 * $l, $r * 3);
+        )
+    }
 
+    testcase!{2, 2u8}
+}
 
 #[test]
 fn expr_metavariable_is_parenthesized() {

@@ -20,9 +20,11 @@ mod none_delimited_tests;
 ///   that corresponds to the passed-in constants 
 ///   (e.g.: the [`Usize`](typewit::const_marker::Usize) marker corresponds to `usize`),
 /// 
+/// [**examples below**](#examples)
+/// 
 /// # Syntax
 /// 
-/// This macro supports a subset of valid Rust syntax:
+/// This macro supports a subset of valid Rust syntax in each expression:
 /// - `+`
 /// - `-`(unary and binary)
 /// - `*`
@@ -64,6 +66,152 @@ mod none_delimited_tests;
 /// 
 /// If those assumptions are broken,
 /// this macro causes a const panic when the function that uses this macro is compiled.
+/// 
+/// # Alternatives
+/// 
+/// These are some alternatives to using this macro
+/// 
+/// ### [`typewit::Identity`] trait
+/// 
+/// The [`Identity`] trait can be used for emulating type equality bounds,
+/// 
+/// The trait has the advantage that it can be used to prove type equality,
+/// but has the disadvantage that it requires the *caller* to prove that 
+/// the types are the same.
+/// 
+/// This macro however, does not require additional bounds to use, 
+/// but cannot prove all expressions are equivalent.
+/// 
+/// <details>
+/// <summary> <code>Identity</code> trait example </summary>
+/// 
+/// This example demonstrates the difference between using [`Identity`] and this macro.
+/// 
+/// ```rust
+/// #![feature(generic_const_exprs)]
+/// use typewit_gce::{Identity, TypeEq, gce_int_eq};
+/// 
+/// fn swap_add<const A: usize, const B: usize>(array: [u8; A + B]) -> [u8; B + A]
+/// where
+///     // emulates a `[u8; A + B] == [u8; B + A]` bound
+///     [u8; A + B]: Identity<Type = [u8; B + A]>
+/// {
+///     // performs the `[u8; A + B]` to `[u8; B + A]` coercion
+///     Identity::TYPE_EQ.to_right(array)
+/// }
+/// 
+/// // same as the above function
+/// fn swap_add_b<const A: usize, const B: usize>(array: [u8; A + B]) -> [u8; B + A]
+/// where
+///     // no constraints required!
+/// {
+///     // performs the `[u8; A + B]` to `[u8; B + A]` coercion
+///     TypeEq::NEW.in_array(gce_int_eq!(A + B, B + A)).to_right(array)
+/// }
+/// ```
+/// 
+/// </details>
+/// 
+/// [`Identity`]: typewit::Identity
+/// 
+/// ### [`const_marker`] types
+/// 
+/// The [`const_marker`] types are marker types, 
+/// each of which is named after the type it has as a const parameter
+/// (e.g.: `Usize` has `usize` as its const parameter).
+/// 
+/// If used in a generic function, these types can be used to const assert
+/// that two const expressions are equal, causing a const panic if they aren't.
+/// 
+/// Using `const_marker` types for const asserting equality of generic constants can 
+/// trigger panics in downstream crates if used wrong, so **use with care**.<br>
+/// (in constrast, this macro errors on potentially unequal arguments 
+/// at the moment the macro is invoked,
+/// which doesn't require the function to ever be called)
+/// 
+/// 
+/// <details>
+/// <summary> <code>const_marker</code> example </summary>
+/// 
+/// This example demonstrates the difference between using [`const_marker`] types and this macro.
+/// 
+/// Using [`const_marker::Usize`](typewit::const_marker::Usize):
+/// ```rust,compile_fail
+/// #![feature(generic_const_exprs)]
+/// use typewit_gce::const_marker::{ConstMarker, CmEquals, Usize};
+/// use typewit_gce::TypeEq;
+/// 
+/// 
+/// // compiles these calls successfully
+/// assert_eq!(dubious_api::<0, 4>([]), []);
+/// assert_eq!(dubious_api::<1, 4>([]), []);
+/// 
+/// // fails to compile on this call!
+/// assert_eq!(dubious_api::<2, 4>([]), [3]);
+/// 
+/// fn dubious_api<const A: usize, const B: usize>(array: [u8; A / B]) -> [u8; (A + 2) / B] {
+///     // const assert that `A / B` and `(A + 2) / B` are the same
+///     // causes a compilation error if this fn is called and they're not the same!
+///     let len_eq = const { CmEquals::<Usize<{A / B}>, Usize<{(A + 2) / B}>>::VAL.unwrap_eq() };
+///     
+///     // performs the `[u8; A / B]` to `[u8; (A + 2) / B]` coercion if reached
+///     TypeEq::NEW.in_array(len_eq).to_right(array)
+/// }
+/// ```
+/// The above code errored only when `dubious_api` with unequal types is called,
+/// with this error message:
+/// ```text
+/// error[E0080]: evaluation panicked: called `TypeCmp::unwrap_eq` on a `TypeNe` value
+///   --> src/macros.rs:155:26
+///    |
+/// 21 |     let len_eq = const { CmEquals::<Usize<{A / B}>, Usize<{(A + 2) / B}>>::VAL.unwrap_eq() };
+///    |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `main::_doctest_main_src_macros_rs_137_0::dubious_api::<2, 4>::{constant#2}` failed here
+/// 
+/// note: erroneous constant encountered
+///   --> src/macros.rs:155:18
+///    |
+/// 21 |     let len_eq = const { CmEquals::<Usize<{A / B}>, Usize<{(A + 2) / B}>>::VAL.unwrap_eq() };
+///    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/// 
+/// note: the above error was encountered while instantiating `fn dubious_api::<2, 4>`
+///   --> src/macros.rs:150:12
+///    |
+/// 16 | assert_eq!(dubious_api::<2, 4>([]), [3]);
+///    |            ^^^^^^^^^^^^^^^^^^^^^^^
+/// ```
+/// 
+/// In contrast, with `gce_int_eq`:
+/// ```rust,compile_fail
+/// #![feature(generic_const_exprs)]
+/// use typewit_gce::{TypeEq, gce_int_eq};
+/// 
+/// // same API as the above example
+/// fn dubious_api<const A: usize, const B: usize>(array: [u8; A / B]) -> [u8; (A + 2) / B] {
+///     // errors because the expressions are not always equal
+///     TypeEq::NEW.in_array(gce_int_eq!(A / B, (A + 2) / B)).to_right(array)
+/// }
+/// ```
+/// This errors even if the function isn't called, 
+/// because `gce_int_eq` can't prove the two expression are equal,
+/// with this error message:
+/// ```text
+/// error: Cannot prove that the arguments are equal.
+///        This is their normalized representation:
+///        left: `(A) / (B)`
+///        right: `(2 + A) / (B)`
+///   --> src/macros.rs:169:26
+///    |
+/// 12 |     TypeEq::NEW.in_array(gce_int_eq!(A / B, (A + 2) / B)).to_right(array)
+///    |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+///    |
+///    = note: this error originates in the macro `gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+/// ```
+/// 
+/// </details>
+/// 
+/// 
+/// [`const_marker`]: typewit::const_marker
+/// 
 /// 
 /// # Examples
 /// 

@@ -1,5 +1,5 @@
 use typewit::{
-    const_marker::{self as cm, ConstMarker, ConstMarkerEq},
+    const_marker::{self as cm, ConstMarker, CmEquals},
     TypeEq,
 };
 
@@ -27,40 +27,31 @@ impl<T> __ConstMarkerFactory<T> {
 }
 
 macro_rules! impls {
-    ($(($ty:ident $marker:ident))*) => ($(
+    ($ty:ident $marker:ident) => (
         impl __ConstMarkerFactory<$ty> {
             #[track_caller]
             #[inline(always)]
             pub const fn get_equality_proof<const L: $ty, const R: $ty>(
                 self
             ) -> TypeEq<cm::$marker<L>, cm::$marker<R>> {
-                const { 
-                    <cm::$marker<L> as ConstMarkerEq>::Equals::VAL.expect_eq(
-                        "`typewit_gce::gce_int_eq` was passed a const expression whose value \
-                          can be different in different uses"
-                    ) 
-                }
+                crate::__GceIntEqHelper::<cm::$marker<L>, cm::$marker<R>>::VAL
             }
         }
-    )*)
-}
-impls! {
-    (u8 U8) 
-    (u16 U16) 
-    (u32 U32) 
-    (u64 U64) 
-    (u128 U128) 
-    (usize Usize) 
-    (i8 I8) 
-    (i16 I16) 
-    (i32 I32) 
-    (i64 I64) 
-    (i128 I128) 
-    (isize Isize)
+    )
 }
 
-
-
+impls!{u8 U8}
+impls!{u16 U16}
+impls!{u32 U32}
+impls!{u64 U64}
+impls!{u128 U128}
+impls!{usize Usize}
+impls!{i8 I8}
+impls!{i16 I16}
+impls!{i32 I32}
+impls!{i64 I64}
+impls!{i128 I128}
+impls!{isize Isize}
 
 
 
