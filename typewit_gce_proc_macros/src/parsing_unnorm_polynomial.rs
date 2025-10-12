@@ -45,6 +45,9 @@ pub(crate) enum UnnormFunctionCall {
     },
 }
 
+const UNSUPPORTED_SYNTAX_MSG: &str = "this macro doesn't support this syntax";
+
+
 impl From<Vec<Vec<UnnormMulExpr>>> for UnnormPolynomial {
     fn from(vv: Vec<Vec<UnnormMulExpr>>) -> Self {
         Self {
@@ -118,13 +121,11 @@ fn parse_term_inner(
     term: &mut UnnormPolynomialTerm, 
     parser: &mut Parser,
 ) -> Result<(), Error> {
-    let mut has_parsed_one = false;
+    
+    parse_mul_subexpr(&mut term.mul_exprs, parser)?;
+
     loop {
-        if let Some(TT::Group(_) | TT::Ident(_) | TT::Literal(_)) = parser.peek() {
-            parse_mul_subexpr(&mut term.mul_exprs, parser)?;
-        } else if let Some(path) = opt_parse_path(parser)? { 
-            term.mul_exprs.push(parse_var_or_func(path, parser)?)
-        } else if opt_parse_punct(parser, |p| p.as_char() == '*') {
+        if opt_parse_punct(parser, |p| p.as_char() == '*') {
             parse_mul_subexpr(&mut term.mul_exprs, parser)?;
         } else if opt_parse_punct(parser, |p| p.as_char() == '%') {
             let mut rhs = Vec::new();
@@ -156,38 +157,39 @@ fn parse_term_inner(
                     UnnormMulExpr::FunctionCall(UnnormFunctionCall::Div(lhs, rhs))
                 );
             }
-        } else if opt_parse_punct(parser, |p| p.as_char() == '&') {
-            // ignore borrows
-            continue;
         } else if let Some(tt) = parser.peek() {
-            if has_parsed_one {
-                return Ok(())
+            if end_of_term(&tt) {
+                return Ok(());
             } else {
-                return Err(Error::new(tt.span(), "empty polynomial term"))
+                return Err(Error::new(tt.span(), UNSUPPORTED_SYNTAX_MSG))
             }
-        } else if has_parsed_one {
-            return Ok(())
         } else {
-            return Err(Error::new(Span::call_site(), "empty polynomial term"))
+            return Ok(())
         }
-
-        has_parsed_one = true;
     }
 }
 
 
 
 /// returns an error if there's no expression
-fn parse_mul_subexpr(mul_exprs: &mut Vec<UnnormMulExpr>, parser: &mut Parser) -> Result<(), Error> {
-    if let Some(group) = opt_parse_group(
-        parser, 
-        |g| matches!(g.delimiter(), Delimiter::Parenthesis | Delimiter::None),
-    ) {
-        let iter = &mut group.stream().into_iter().peekable();
+fn parse_mul_subexpr(
+    mul_exprs: &mut Vec<UnnormMulExpr>, 
+    parser: &mut Parser
+) -> Result<(), Error> {
+    if let Some(group) = opt_parse_group(parser, |_| true) {
+        match group.delimiter() {
+            Delimiter::Parenthesis | Delimiter::None => {
+                let iter = &mut group.stream().into_iter().peekable();
 
-        mul_exprs.push(UnnormMulExpr::Parenthesis(parse_polynomial(iter)?));
-    } else if let Some(group) = opt_parse_group(parser, |g| g.delimiter() == Delimiter::Brace) {
-        mul_exprs.push(UnnormMulExpr::UnevaledExpr(UnevaledExpr::new(group.stream())));
+                mul_exprs.push(UnnormMulExpr::Parenthesis(parse_polynomial(iter)?));
+            }
+            Delimiter::Brace => {
+                mul_exprs.push(UnnormMulExpr::UnevaledExpr(UnevaledExpr::new(group.stream())));
+            }
+            Delimiter::Bracket => {
+                return Err(Error::new(group.span(), UNSUPPORTED_SYNTAX_MSG))
+            }
+        }
     } else if let Some(path) = opt_parse_path(parser)? {
         mul_exprs.push(parse_var_or_func(path, parser)?)
     } else if let Some(TT::Literal(lit)) = parser.peek() {
@@ -202,7 +204,7 @@ fn parse_mul_subexpr(mul_exprs: &mut Vec<UnnormMulExpr>, parser: &mut Parser) ->
         }
         parse_mul_subexpr(mul_exprs, parser)?;
     } else if let Some(tt) = parser.peek() {
-        return Err(Error::new(tt.span(), "expected expression"))
+        return Err(Error::new(tt.span(), UNSUPPORTED_SYNTAX_MSG))
     } else {
         return Err(Error::new(Span::call_site(), "expected expression"))
     }
@@ -326,6 +328,11 @@ fn parse_path(parser: &mut Parser) -> Result<String, Error> {
 fn parse_int(span: Span, str: &str) -> Result<UnnormMulExpr, Error> {
     crate::unevaled_expr::parse_bigint(span, str)
         .map(UnnormMulExpr::Constant)
+}
+
+fn end_of_term(tt: &TT) -> bool {
+    matches!(tt, TT::Punct(p) if matches!(p.as_char(), '+' | '-'))
+    || end_of_expr(tt)
 }
 
 fn end_of_expr(tt: &TT) -> bool {

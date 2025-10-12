@@ -1,6 +1,6 @@
 use std::iter::{self, FromIterator, Once};
 
-use num_bigint::BigInt;
+use num_bigint::{BigInt, BigUint};
 
 
 #[allow(unused_imports)]
@@ -18,6 +18,12 @@ pub(crate) struct CrateToken {
 
 pub(crate) fn bi_eq(bi: &BigInt, num: i128) -> bool {
     match i128::try_from(bi) {
+        Ok(rhs) => num == rhs,
+        Err(_) => false,
+    }
+}
+pub(crate) fn bu_eq(bu: &BigUint, num: u128) -> bool {
+    match u128::try_from(bu) {
         Ok(rhs) => num == rhs,
         Err(_) => false,
     }

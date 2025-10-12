@@ -27,7 +27,7 @@ impl Error {
         let krate = krate.krate.clone()
             .into_iter()
             .map(|mut k| {
-                k.set_span(k.span().located_at(Span::call_site()));
+                k.set_span(k.span().located_at(span));
                 k
             });
 

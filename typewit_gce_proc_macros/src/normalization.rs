@@ -10,7 +10,7 @@ use crate::{
     SimplifyFraction,
 };
 
-use num_bigint::{BigInt, BigUint};
+use num_bigint::{BigInt, BigUint, Sign};
 use num_integer::Integer;
 use num_traits::{CheckedSub, Signed};
 
@@ -20,9 +20,11 @@ use std::{
         btree_map::{BTreeMap, Entry as MapEntry},
         btree_set::BTreeSet,
     },
-    fmt::{self, Display},
     rc::Rc,
 };
+
+#[cfg(test)]
+mod formatting_tests;
 
 #[cfg(test)]
 mod normal_tests;
@@ -32,6 +34,8 @@ mod div_rem_tests;
 
 #[cfg(test)]
 mod test_interpreter;
+
+mod formatting;
 
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -75,73 +79,8 @@ pub(crate) enum FunctionCall {
     },
 }
 
-impl Display for Polynomial {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut iter = self.terms.iter();
 
-        let Some((vars1, coeff1)) = iter.next() else {
-            return write!(f, "0")
-        };
 
-        fmt_term(vars1, coeff1, f)?;
-        
-        for (vars, coeff) in iter {
-            f.write_str(" + ")?;
-            fmt_term(vars, coeff, f)?;
-        }
-
-        Ok(())
-    }
-}
-
-fn fmt_term(vars: &Vars, coeff: &Coefficient, f: &mut fmt::Formatter) -> fmt::Result {
-    let mut print_mul = !bi_eq(coeff, 1) || vars.is_empty();
-    if print_mul {
-        write!(f, "{coeff}")?;
-    }
-
-    for (varlike, power) in vars {
-        if std::mem::replace(&mut print_mul, false) {
-            write!(f, " * ")?;
-        }
-        match varlike {
-            Varlike::Variable(var) => {
-                write!(f, "{var}")?;
-            }
-            Varlike::UnevaledExpr(expr) => {
-                write!(f, "{{ {} }}", expr.as_str())?;
-            }
-            Varlike::FunctionCall(FunctionCall::Rem(numer, denom)) => {
-                write!(f, "({numer}) % ({denom})")?;
-            }
-            Varlike::FunctionCall(FunctionCall::Div(numer, denom)) => {
-                write!(f, "({numer}) / ({denom})")?;
-            }
-            // an arbitrary function `foo(bar, baz)` is treated as though foo it is
-            // `(foo * (bar + baz))`
-            Varlike::FunctionCall(FunctionCall::Other {name, args}) => {
-                write!(f, "{name}(")?;
-                
-                let mut iter = args.iter();
-
-                if let Some(arg) = iter.next() {
-                    write!(f, "{arg}")?;
-                }
-
-                for arg in iter {
-                    write!(f, ", {arg}")?;
-                }
-                write!(f, ")")?;
-            },
-        }
-
-        if *power > BigUint::from(1u8) {
-            write!(f, "**{power}")?;
-        }
-    }
-
-    Ok(())
-}
 
 
 pub(crate) fn normalize_polynomial(
@@ -262,7 +201,8 @@ fn unexpanded_normalize_term(
                 let key = match func {
                     UnnormFunctionCall::Rem(numer, denom) => {
                         match normalize_rem(numer, denom, reduce_fractions) {
-                            NormalizedRemainder::Remainder(numer_out, denom_out) => {
+                            NormalizedRemainder::Remainder(numer_out, denom_out, sign_i8) => {
+                                *coefficient *= sign_i8;
                                 V_FC(FunctionCall::Rem(numer_out, denom_out))
                             }
                             NormalizedRemainder::Integer(int) => {
@@ -273,7 +213,8 @@ fn unexpanded_normalize_term(
                     }
                     UnnormFunctionCall::Div(numer, denom) => {
                         match normalize_div(numer, denom, reduce_fractions) {
-                            NormalizedDivision::Division(numer_out, denom_out) => {
+                            NormalizedDivision::Division(numer_out, denom_out, sign_i8) => {
+                                *coefficient *= sign_i8;
                                 V_FC(FunctionCall::Div(numer_out, denom_out))
                             }
                             NormalizedDivision::Polynomial(poly) => {
@@ -310,7 +251,7 @@ fn unexpanded_normalize_term(
 
 
 enum NormalizedRemainder {
-    Remainder(Rc<Polynomial>, Rc<Polynomial>),
+    Remainder(Rc<Polynomial>, Rc<Polynomial>, i8),
     Integer(BigInt),
 }
 
@@ -319,8 +260,13 @@ fn normalize_rem(
     denominator: UnnormPolynomialTerm,
     reduce_fractions: SimplifyFraction,
 ) -> NormalizedRemainder {
-    let (numer_poly, denom_poly) = 
-        normalize_fraction(numerator, denominator, reduce_fractions, |_, _| ());
+    let (numer_poly, denom_poly, sign_i8) = normalize_fraction(
+        numerator, 
+        denominator, 
+        reduce_fractions, 
+        |sign_numer, _| sign_numer, 
+        |_, _| (),
+    );
 
     if reduce_fractions.is_yes() {
         match (map_as_one_entry(&numer_poly.terms), map_as_one_entry(&denom_poly.terms)) {
@@ -338,13 +284,13 @@ fn normalize_rem(
             (Some((numer_vars, numer_coeff)), Some((denom_vars, denom_coeff))) 
             if numer_vars.is_empty() && denom_vars.is_empty()
             => {
-                return NormalizedRemainder::Integer(numer_coeff % denom_coeff)
+                return NormalizedRemainder::Integer((numer_coeff % denom_coeff) * sign_i8)
             }
             _ => {}
         }
     }
 
-    NormalizedRemainder::Remainder(Rc::new(numer_poly), Rc::new(denom_poly))
+    NormalizedRemainder::Remainder(Rc::new(numer_poly), Rc::new(denom_poly), sign_i8)
 }
 
 
@@ -352,13 +298,16 @@ fn normalize_fraction(
     numerator: UnnormPolynomialTerm,
     denominator: UnnormPolynomialTerm,
     reduce_fractions: SimplifyFraction,
+    map_sign: impl Fn(Sign, Sign) -> Sign,
     mut on_simplified_to_int: impl FnMut(Vars, Coefficient)
-) -> (Polynomial, Polynomial) {
+) -> (Polynomial, Polynomial, i8) {
     let mut numer_poly = Polynomial::zero();
     let mut denom_poly = Polynomial::zero();
 
     normalize_term(numerator, reduce_fractions, &mut numer_poly);
     normalize_term(denominator, reduce_fractions, &mut denom_poly);
+
+    let mut sign_out = 1;
 
     if reduce_fractions.is_yes() {        
         if denom_poly.terms.len() == 1 {
@@ -381,17 +330,29 @@ fn normalize_fraction(
         
         (fact_numer, fact_denom) = div_term(fact_numer, fact_denom);
 
+        {
+            let sign = map_sign(fact_numer.coeff.sign(), fact_denom.coeff.sign());
+
+            sign_out = match sign {
+                Sign::Minus => -1,
+                _ => 1,
+            };
+
+            fact_numer.coeff = fact_numer.coeff.abs();
+            fact_denom.coeff = fact_denom.coeff.abs();
+        }
+
         mul_assign_poly_with_term(&mut numer_poly, &fact_numer);
         mul_assign_poly_with_term(&mut denom_poly, &fact_denom);
     }
 
-    (numer_poly, denom_poly)
+    (numer_poly, denom_poly, sign_out)
 }
 
 struct IntegerDivision(BigInt);
 
 enum NormalizedDivision {
-    Division(Rc<Polynomial>, Rc<Polynomial>),
+    Division(Rc<Polynomial>, Rc<Polynomial>, i8),
     Polynomial(Polynomial),
     Integer(BigInt),
 }
@@ -403,15 +364,16 @@ fn normalize_div(
 ) -> NormalizedDivision {
     let mut out_poly = Polynomial::zero();
 
-    let (numer_poly, denom_poly) = normalize_fraction(
+    let (numer_poly, denom_poly, sign_i8) = normalize_fraction(
         numerator,
         denominator,
         reduce_fractions,
+        |sign_numer, sign_denom| sign_numer * sign_denom,
         |out_vars, out_coeff| insert_term(&mut out_poly, out_vars, out_coeff)
     );
 
     if reduce_fractions.is_no() {
-        return NormalizedDivision::Division(numer_poly.into(), denom_poly.into())
+        return NormalizedDivision::Division(numer_poly.into(), denom_poly.into(), 1)
     }
 
     let integer_div = match (
@@ -427,10 +389,10 @@ fn normalize_div(
         (Some((numer_vars, numer_coeff)), Some((denom_vars, denom_coeff))) 
         if numer_vars.is_empty() && denom_vars.is_empty()
         => {
-            Some(IntegerDivision(numer_coeff / denom_coeff))
+            Some(IntegerDivision((numer_coeff / denom_coeff) * sign_i8))
         }
         (Some((numer_vars, numer_coeff)), Some((_, denom_coeff))) 
-        if numer_vars.is_empty() && numer_coeff.abs() < denom_coeff.abs()
+        if numer_vars.is_empty() && numer_coeff.magnitude() < denom_coeff.magnitude()
         => {
             Some(IntegerDivision(0.into()))
         }
@@ -440,14 +402,14 @@ fn normalize_div(
     };
 
     match (out_poly.terms.len(), integer_div) {
-        (0, None) => NormalizedDivision::Division(numer_poly.into(), denom_poly.into()),
+        (0, None) => NormalizedDivision::Division(numer_poly.into(), denom_poly.into(), sign_i8),
         (0, Some(IntegerDivision(n))) => NormalizedDivision::Integer(n),
         (1.., None) => {
             let key = Varlike::FunctionCall(
                 FunctionCall::Div(Rc::new(numer_poly), Rc::new(denom_poly.into()))
             );
 
-            insert_term(&mut out_poly, Vars::from([(key, 1u8.into())]), 1.into());
+            insert_term(&mut out_poly, Vars::from([(key, 1u8.into())]), sign_i8.into());
 
             NormalizedDivision::Polynomial(out_poly)
         }
@@ -616,5 +578,36 @@ fn map_as_one_entry<K, V>(map: &BTreeMap<K, V>) -> Option<(&K, &V)> {
     }
 }
 
+fn not_divlike(varlike: &Varlike) -> bool {
+    use Varlike as Vl;
+    use FunctionCall as FC;
+
+    // not using `matches!()` to ensure that all variants are considered
+    match varlike {
+        Vl::Variable{..}
+        | Vl::UnevaledExpr{..}
+        | Vl::FunctionCall(FC::Other{..})
+        => true,
+        Vl::FunctionCall(FC::Div{..})
+        | Vl::FunctionCall(FC::Rem{..})
+        => false
+    } 
+}
+
+fn polynomial_is_unparenth_numer(poly: &Polynomial) -> bool {
+    poly.terms.len() == 0 || 
+    map_as_one_entry(&poly.terms).is_some_and(|(vars, coeff)| {
+        vars.iter().all(|(varlike, _power)| not_divlike(varlike))
+    })
+}
+
+fn polynomial_is_unparenth_denom(poly: &Polynomial) -> bool {
+    poly.terms.len() == 0 || 
+    map_as_one_entry(&poly.terms).is_some_and(|(vars, coeff)| {
+        vars.len() == 0 || 
+        crate::utils::bu_eq(coeff.magnitude(), 1) &&
+        map_as_one_entry(vars).is_some_and(|(varlike, _power)| not_divlike(varlike))
+    })
+}
 
 

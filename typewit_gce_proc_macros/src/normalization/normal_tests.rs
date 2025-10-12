@@ -149,6 +149,14 @@ fn test_noncommutative() {
 }
 
 #[test]
+fn test_mul_sign() {
+    asse_eq("x", "( x) * ( x) = x * x");
+    asse_eq("x", "( x) * (-x) = - (x * x)");
+    asse_eq("x", "(-x) * ( x) = - (x * x)");
+    asse_eq("x", "(-x) * (-x) = x * x");
+}
+
+#[test]
 fn test_function() {
     asse_eq("x,y,f", "f(2 * 3, x + y) + 1 = 1 + f(1 * 6, y + x)");
     
@@ -178,6 +186,8 @@ fn test_distributive_fn() {
 
 #[test]
 fn test_distributive_single() {
+    asse_eq("x", "(4 * x) * (4 * x) = 16 * x * x");
+
     asse_eq("x", "(x + 1) * 1 = x + 1");
     asse_eq("x", "(x + 1) * -1 = -x - 1");
     asse_eq("x", "(x + 1) * 2 = 2 * x + 2");

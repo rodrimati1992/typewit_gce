@@ -47,14 +47,22 @@ fn parse_crate_token(tt: Option<TT>) -> CrateToken {
 }
 
 
+fn __parse_one_polynomial(
+    crate_path: &CrateToken,
+    simplify_fraction: SimplifyFraction,
+    iter: &mut std::iter::Peekable<used_proc_macro::token_stream::IntoIter>,
+) -> Result<Polynomial, (CrateToken, crate::error::Error)> {
+    parsing_unnorm_polynomial::parse_polynomial(iter)
+        .map_err(|e| (crate_path.clone(), e))
+        .map(|x| normalization::normalize_polynomial(x, simplify_fraction))
+}
+
 fn __parse_polynomials(
     crate_path: &CrateToken,
     simplify_rhs: SimplifyFraction,
     iter: &mut std::iter::Peekable<used_proc_macro::token_stream::IntoIter>,
 ) -> Result<(Polynomial, Polynomial), (CrateToken, crate::error::Error)> {
-    let lhs_poly = parsing_unnorm_polynomial::parse_polynomial(iter)
-        .map_err(|e| (crate_path.clone(), e))
-        .map(|x| normalization::normalize_polynomial(x, SimplifyFraction::Yes))?;
+    let lhs_poly = __parse_one_polynomial(crate_path, SimplifyFraction::Yes, iter)?;
 
     if let Some(TT::Punct(p)) = iter.peek()
     && let ',' | '=' = p.as_char()
@@ -62,9 +70,7 @@ fn __parse_polynomials(
         _ = iter.next();
     }
 
-    let rhs_poly = parsing_unnorm_polynomial::parse_polynomial(iter)
-        .map_err(|e| (crate_path.clone(), e))
-        .map(|x| normalization::normalize_polynomial(x, simplify_rhs))?;
+    let rhs_poly = __parse_one_polynomial(crate_path, simplify_rhs, iter)?;
 
     Ok((lhs_poly, rhs_poly))
 }

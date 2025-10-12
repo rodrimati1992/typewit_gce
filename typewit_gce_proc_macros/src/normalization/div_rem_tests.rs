@@ -66,6 +66,14 @@ fn test_rem_constants() {
 }
 
 #[test]
+fn test_rem_sign() {
+    asse_eq("x,y", "x % y   =   (x % y)");
+    asse_eq("x,y", "-x % y  = - (x % y)");
+    asse_eq("x,y", "x % -y  =   (x % y)");
+    asse_eq("x,y", "-x % -y = - (x % y)");
+}
+
+#[test]
 fn test_rem_single_numerator_term() {
     asse_eq("x", "x * 2 % 3 = 2 * x % 3");
     asse_eq("x,y", "y * (x * 2 % 3) = 2 * x % 3 * y");
@@ -95,6 +103,14 @@ fn test_rem_poly_numerator() {
 
 
 #[test]
+fn test_div_sign() {
+    asse_eq("x,y", "x / y   =   (x / y)");
+    asse_eq("x,y", "-x / y  = - (x / y)");
+    asse_eq("x,y", "x / -y  = - (x / y)");
+    asse_eq("x,y", "-x / -y =   (x / y)");
+}
+
+#[test]
 fn test_div_unequal_denoms() {
     asse_ne("x", "x / 3 = x / 2");
     asse_ne("x,y,z", "x / y = x / z");
@@ -120,8 +136,13 @@ fn test_div_commutative() {
     asse_eq("x", "x * 2 / 3 = 2 * x / 3");
 
     asse_eq("x", "x * 2 / 3 = 2 * x / 3");
-    asse_eq("x", "x * 2 / -3 = 2 * x / (-3)");
+    asse_eq("x", "x * 2 / -3 = - (2 * x / 3)");
     asse_eq("x,y", "x * 2 / 3 * y = y * (2 * x / 3)");
+}
+
+#[test]
+fn test_div_nested() {
+    asse_eq("X,Y,Z,W", "1 / X * Y / Z / W = ((Y * (1 / X)) / Z) / W");
 }
 
 #[test]
