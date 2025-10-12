@@ -1,21 +1,58 @@
-use crate::SimplifyFraction;
-
-use super::normal_tests::{asse_eq, asse_ne};
+use super::{
+    normal_tests::{asse_eq, asse_ne, polynomial_1term, polynomial_1var, parse},
+    Varlike as VL,
+    FunctionCall as FC,
+    Polynomial,
+};
 
 // ensuring that `asse_eq` and `asse_ne` don't reduce the rhs
 #[test]
 fn test_asse_of_rem_doesnt_reduce_the_rhs() {
     asse_eq("", "6 % 3 = 0");
 
-    asse_ne("", "6 % 3 = 6 % 3");
-    asse_ne("", "6 % 3 = 3 % 2");
+    assert_eq!(
+        parse("6 % 3 = 6 % 3").unwrap(),
+        (
+            Polynomial::zero(),
+            polynomial_1var(
+                VL::FunctionCall(FC::Rem(
+                    polynomial_1term(vec![], 6).into(),
+                    polynomial_1term(vec![], 3).into(),
+                ))
+            )
+        )
+    );
+
+    assert_eq!(
+        parse("6 % 3 = 3 % 2").unwrap(),
+        (
+            Polynomial::zero(),
+            polynomial_1var(
+                VL::FunctionCall(FC::Rem(
+                    polynomial_1term(vec![], 3).into(),
+                    polynomial_1term(vec![], 2).into(),
+                ))
+            )
+        )
+    );
 }
 
 #[test]
 fn test_asse_of_div_doesnt_reduce_the_rhs() {
     asse_eq("", "6 / 3 = 2");
 
-    asse_ne("", "6 / 3 = 6 / 3");
+    assert_eq!(
+        parse("6 / 3 = 6 / 3").unwrap(),
+        (
+            polynomial_1term(vec![], 2),
+            polynomial_1var(
+                VL::FunctionCall(FC::Div(
+                    polynomial_1term(vec![], 6).into(),
+                    polynomial_1term(vec![], 3).into(),
+                ))
+            )
+        )
+    );
 }
 
 

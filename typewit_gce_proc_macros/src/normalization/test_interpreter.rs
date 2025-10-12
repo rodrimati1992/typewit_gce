@@ -5,8 +5,6 @@ use super::{
 };
 
 use num_bigint::BigInt;
-use num_integer::Integer;
-use num_traits::Signed;
 
 use std::collections::HashMap;
 
@@ -17,6 +15,7 @@ pub(super) enum InterpreterError {
 }
 
 #[derive(Debug)]
+#[expect(dead_code)]
 pub(super) struct UnknownVariable(String);
 
 
@@ -60,17 +59,17 @@ fn interpret_poly_inner(
                     BigInt::from_bytes_le(num_bigint::Sign::Plus, expr.as_str().as_bytes())
                 }
                 Varlike::FunctionCall(FC::Rem(numer, denom)) => {
-                    interpret_poly_inner(numer, vars)?
-                        .checked_div(&interpret_poly_inner(denom, vars)?)
-                        .ok_or_else(|| InterpreterError::ZeroDenom)?
-                }
-                Varlike::FunctionCall(FC::Div(numer, denom)) => {
                     let denom_val = interpret_poly_inner(denom, vars)?;
                     if denom_val == BigInt::ZERO {
                         return Err(InterpreterError::ZeroDenom)
                     }
 
                     interpret_poly_inner(numer, vars)? % denom_val
+                }
+                Varlike::FunctionCall(FC::Div(numer, denom)) => {
+                    interpret_poly_inner(numer, vars)?
+                        .checked_div(&interpret_poly_inner(denom, vars)?)
+                        .ok_or_else(|| InterpreterError::ZeroDenom)?
                 }
                 // an arbitrary function `foo(bar, baz)` is treated as though foo it is
                 // `(foo * (bar + baz))`

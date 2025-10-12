@@ -4,17 +4,37 @@ use crate::{
     SimplifyFraction,
 };
 
-use super::Polynomial;
+use super::{Polynomial, Varlike};
 
 use num_bigint::BigInt;
 
 use itertools::Itertools;
 
 
+pub(super) fn polynomial_1term(vars: Vec<(Varlike, u128)>, coeff: i128) -> Polynomial {
+    make_polynomial(vec![(vars, coeff.into())])
+}
+
+pub(super) fn polynomial_1var(varlike: Varlike) -> Polynomial {
+    make_polynomial(vec![(vec![(varlike, 1u8.into())], 1u8.into())])
+}
+
+pub(super) fn make_polynomial(vect: Vec<(Vec<(Varlike, u128)>, i128)>) -> Polynomial {
+    Polynomial {
+        terms: vect
+            .into_iter()
+            .map(|(vars, coeff)| (
+                vars.into_iter().map(|(var, pow)| (var, pow.into())).collect(), 
+                coeff.into(),
+            ))
+            .collect()
+    }
+}
+
+
 #[track_caller]
 pub(super) fn parse(
     s: &str, 
-    simplify_rhs: SimplifyFraction,
 ) -> Result<(Polynomial, Polynomial), Error> {
     let input_tokens: crate::used_proc_macro::TokenStream = s.parse().unwrap();
     let iter = &mut input_tokens.into_iter().peekable();
@@ -23,7 +43,7 @@ pub(super) fn parse(
         krate: "crate".parse().unwrap()
     };
 
-    crate::__parse_polynomials(&crate_token, simplify_rhs, iter).map_err(|(_, e)| e)
+    crate::__parse_polynomials(&crate_token, SimplifyFraction::No, iter).map_err(|(_, e)| e)
 }
 
 #[track_caller]
@@ -62,7 +82,7 @@ pub(super) fn run_interpreter(
 
 #[track_caller]
 pub(super) fn asse_eq(vars: &str, s: &str) {
-    let (l, r) = parse(s, SimplifyFraction::No).unwrap();
+    let (l, r) = parse(s).unwrap();
 
     let vars = vars.split(',').map(|x| x.trim()).collect::<Vec<_>>();
 
@@ -75,7 +95,7 @@ pub(super) fn asse_eq(vars: &str, s: &str) {
 
 #[track_caller]
 pub(super) fn asse_ne(vars: &str, s: &str) {
-    let (l, r) = parse(s, SimplifyFraction::No).unwrap();
+    let (l, r) = parse(s).unwrap();
 
     let vars = vars.split(',').map(|x| x.trim()).collect::<Vec<_>>();
 

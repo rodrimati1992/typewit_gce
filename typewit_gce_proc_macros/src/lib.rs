@@ -81,7 +81,15 @@ fn __assert_equal(input_tokens: TokenStream) -> Result<(), (CrateToken, crate::e
     } else {
         Err((
             crate_path,
-            crate::error::Error::new(Span::call_site(), "cannot prove expressions are equal"),
+            crate::error::Error::new(
+                Span::call_site(), 
+                format!("\
+                    Cannot prove that the arguments are equal.\n\
+                    This is their normalized representation:\n\
+                     left: `{lhs_poly}`\n\
+                    right: `{rhs_poly}`\n\
+                ")
+            ),
         ))
     }
 }

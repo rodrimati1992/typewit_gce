@@ -8,19 +8,19 @@ use crate::utils::CrateToken;
 #[derive(Debug)]
 pub(crate) struct Error {
     span: Span,
-    error: &'static str,
+    error: String,
 }
 
 impl Error {
-    pub(crate) fn new(span: Span, error: &'static str) -> Self {
+    pub(crate) fn new(span: Span, error: impl Into<String>) -> Self {
         Self {
             span,
-            error,
+            error: error.into(),
         }
     }
 
     pub(crate) fn to_compile_error(&self, krate: CrateToken) -> TokenStream {
-        let Error { error, span } = *self;
+        let Error { ref error, span } = *self;
 
         let mut out = TokenStream::new();
 
@@ -41,7 +41,7 @@ impl Error {
         out.extend(crate::utils::punct_token('!', span));
 
         let msg_paren = crate::utils::paren(span, |ts| {
-            let mut msg = Literal::string(error);
+            let mut msg = Literal::string(&error);
             msg.set_span(span);
             let msg = TokenTree::from(msg);
             ts.extend(once(msg))
