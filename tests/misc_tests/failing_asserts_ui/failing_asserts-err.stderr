@@ -1,0 +1,109 @@
+error: Cannot prove that the arguments are equal.
+       This is their normalized representation:
+       left: `3`
+       right: `5`
+  --> tests/misc_tests/failing_asserts_ui/failing_asserts-err.rs:20:9
+   |
+20 |     _ = typewit_gce::gce_int_eq!(3u8, 5);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: Cannot prove that the arguments are equal.
+       This is their normalized representation:
+       left: `X * Y + 3 * Y`
+       right: `X * Y + 5 * Y`
+  --> tests/misc_tests/failing_asserts_ui/failing_asserts-err.rs:22:9
+   |
+22 |     _ = typewit_gce::gce_int_eq!(Y * (3 + X), Y * (5 + X));
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: Cannot prove that the arguments are equal.
+       This is their normalized representation:
+       left: `aaa(3)**2`
+       right: `0`
+  --> tests/misc_tests/failing_asserts_ui/failing_asserts-err.rs:25:9
+   |
+25 |     _ = typewit_gce::gce_int_eq!(aaa(3) * aaa(3), 0);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: Cannot prove that the arguments are equal.
+       This is their normalized representation:
+       left: `X**2`
+       right: `0`
+  --> tests/misc_tests/failing_asserts_ui/failing_asserts-err.rs:26:9
+   |
+26 |     _ = typewit_gce::gce_int_eq!(X * X, 0);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: Cannot prove that the arguments are equal.
+       This is their normalized representation:
+       left: `1 / X`
+       right: `0`
+  --> tests/misc_tests/failing_asserts_ui/failing_asserts-err.rs:27:9
+   |
+27 |     _ = typewit_gce::gce_int_eq!(1/X, 0);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: Cannot prove that the arguments are equal.
+       This is their normalized representation:
+       left: `(1 / X)**2`
+       right: `0`
+  --> tests/misc_tests/failing_asserts_ui/failing_asserts-err.rs:28:9
+   |
+28 |     _ = typewit_gce::gce_int_eq!((1/X) * (1/X), 0);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: Cannot prove that the arguments are equal.
+       This is their normalized representation:
+       left: `1 % X`
+       right: `0`
+  --> tests/misc_tests/failing_asserts_ui/failing_asserts-err.rs:29:9
+   |
+29 |     _ = typewit_gce::gce_int_eq!(1 % X, 0);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: Cannot prove that the arguments are equal.
+       This is their normalized representation:
+       left: `(1 % X)**2`
+       right: `0`
+  --> tests/misc_tests/failing_asserts_ui/failing_asserts-err.rs:30:9
+   |
+30 |     _ = typewit_gce::gce_int_eq!((1 % X) * (1 % X), 0);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: Cannot prove that the arguments are equal.
+       This is their normalized representation:
+       left: `aaa(3) / self::bbb(5)`
+       right: `aaa(3) / (2 + self::bbb(5))`
+  --> tests/misc_tests/failing_asserts_ui/failing_asserts-err.rs:32:9
+   |
+32 |     _ = typewit_gce::gce_int_eq!(aaa(3) / self::bbb(5), aaa(3) / (2 + self::bbb(5)));
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: Cannot prove that the arguments are equal.
+       This is their normalized representation:
+       left: `aaa(3) % self::bbb(5)`
+       right: `aaa(3) % (2 + self::bbb(5))`
+  --> tests/misc_tests/failing_asserts_ui/failing_asserts-err.rs:34:9
+   |
+34 |     _ = typewit_gce::gce_int_eq!(aaa(3) % self::bbb(5), aaa(3) % (2 + self::bbb(5)));
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)

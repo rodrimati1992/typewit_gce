@@ -13,6 +13,8 @@ fn ui() {
     let t = trybuild::TestCases::new();
     for dir in [
         "type_failures_ui",
+        "syntax_failures_ui",
+        "failing_asserts_ui",
     ] {
         t.compile_fail(format!("tests/misc_tests/{}/*-err.rs", dir));
 

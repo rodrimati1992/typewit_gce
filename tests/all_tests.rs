@@ -1,4 +1,5 @@
 #![deny(unused_mut, unused_results)]
+#![allow(incomplete_features)]
 #![feature(generic_const_exprs)]
 
 mod misc_tests {

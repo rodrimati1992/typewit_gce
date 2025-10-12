@@ -1,0 +1,79 @@
+error: this macro doesn't support this syntax
+ --> tests/misc_tests/syntax_failures_ui/syntax_failures_ui-err.rs:3:32
+  |
+3 |     typewit_gce::gce_int_eq!(3 >> 5, 3 >> 5, i8);
+  |                                ^
+  |
+  = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: this macro doesn't support this syntax
+ --> tests/misc_tests/syntax_failures_ui/syntax_failures_ui-err.rs:4:32
+  |
+4 |     typewit_gce::gce_int_eq!(3 << 5, 3 << 5, i8);
+  |                                ^
+  |
+  = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: this macro doesn't support this syntax
+ --> tests/misc_tests/syntax_failures_ui/syntax_failures_ui-err.rs:5:32
+  |
+5 |     typewit_gce::gce_int_eq!(3 | 5, 3 | 5, i8);
+  |                                ^
+  |
+  = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: this macro doesn't support this syntax
+ --> tests/misc_tests/syntax_failures_ui/syntax_failures_ui-err.rs:6:32
+  |
+6 |     typewit_gce::gce_int_eq!(3 ^ 5, 3 ^ 5, i8);
+  |                                ^
+  |
+  = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: this macro doesn't support this syntax
+ --> tests/misc_tests/syntax_failures_ui/syntax_failures_ui-err.rs:7:30
+  |
+7 |     typewit_gce::gce_int_eq!(!3, !3, i8);
+  |                              ^
+  |
+  = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: this macro doesn't support this syntax
+ --> tests/misc_tests/syntax_failures_ui/syntax_failures_ui-err.rs:8:33
+  |
+8 |     typewit_gce::gce_int_eq!(3i8.wrapping_add(20), 3i8.wrapping_add(20), i8);
+  |                                 ^
+  |
+  = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: this macro doesn't support this syntax
+ --> tests/misc_tests/syntax_failures_ui/syntax_failures_ui-err.rs:9:30
+  |
+9 |     typewit_gce::gce_int_eq!([3, 5][0], [3, 5][0], i8);
+  |                              ^^^^^^
+  |
+  = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: this macro doesn't support this syntax
+  --> tests/misc_tests/syntax_failures_ui/syntax_failures_ui-err.rs:14:34
+   |
+14 |     typewit_gce::gce_int_eq!(3 + !5, 3 + !5, i8);
+   |                                  ^
+   |
+   = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: this macro doesn't support this syntax
+  --> tests/misc_tests/syntax_failures_ui/syntax_failures_ui-err.rs:15:34
+   |
+15 |     typewit_gce::gce_int_eq!(3 * !5, 3 * !5, i8);
+   |                                  ^
+   |
+   = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: this macro doesn't support this syntax
+  --> tests/misc_tests/syntax_failures_ui/syntax_failures_ui-err.rs:16:34
+   |
+16 |     typewit_gce::gce_int_eq!(3 / !5, 3 / !5, i8);
+   |                                  ^
+   |
+   = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)

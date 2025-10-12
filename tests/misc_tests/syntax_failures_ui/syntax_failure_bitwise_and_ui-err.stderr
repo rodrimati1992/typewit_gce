@@ -1,0 +1,7 @@
+error: this macro doesn't support this syntax
+ --> tests/misc_tests/syntax_failures_ui/syntax_failure_bitwise_and_ui-err.rs:3:32
+  |
+3 |     typewit_gce::gce_int_eq!(3 & 5, 3 & 5, i8);
+  |                                ^
+  |
+  = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
