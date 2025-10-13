@@ -1,0 +1,15 @@
+error[E0080]: evaluation panicked:
+              `typewit_gce::gce_int_eq` was passed a const expression whose value can be different in different uses
+
+  --> src/./root_module_hidden_items.rs
+   |
+   |             let equal_consts = type_cmp.expect_eq(err_msg);
+   |                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `typewit_gce::_::<impl typewit_gce::__GceIntEqHelper<usize, typewit_gce::const_marker::Usize<34>, typewit_gce::const_marker::Usize<44>>>::NEW` failed here
+
+note: erroneous constant encountered
+  --> tests/misc_tests/failing_asserts_ui/fails_unwrapping_typecmp-err.rs:11:9
+   |
+11 |     _ = typewit_gce::gce_int_eq!(sneaky(), sneaky());
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this note originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)

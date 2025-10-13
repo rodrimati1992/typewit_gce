@@ -67,6 +67,43 @@ mod none_delimited_tests;
 /// If those assumptions are broken,
 /// this macro causes a const panic when the function that uses this macro is compiled.
 /// 
+/// <details>
+/// <summary> <b>Example of breaking the first assumption</b> </summary>
+/// 
+/// ```rust
+/// foo::<()>();
+/// 
+/// const fn foo<T>() {
+///     #[track_caller]
+///     const fn evil() -> usize {
+///         std::panic::Location::caller().column() as usize
+///     }
+/// 
+///     _ = typewit_gce::gce_int_eq!(evil(), evil());
+/// }
+/// ```
+/// because `evil()` returns different values depending on where it's called,
+/// the above function produces this error when `foo` is called:
+/// ```text
+/// error[E0080]: evaluation panicked: 
+///               `typewit_gce::gce_int_eq` was passed a const expression whose value can be different in different uses
+///               
+///   --> /home/matias/Documents/proyectos programacion/typewit_gce/src/./root_module_hidden_items.rs:44:32
+///    |
+/// 44 |             let equal_consts = type_cmp.expect_eq(err_msg);
+///    |                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `typewit_gce::_::<impl typewit_gce::__GceIntEqHelper<usize, typewit_gce::const_marker::Usize<34>, typewit_gce::const_marker::Usize<42>>>::NEW` failed here
+/// 
+/// note: erroneous constant encountered
+///   --> src/macros.rs:83:9
+///    |
+/// 13 |     _ = typewit_gce::gce_int_eq!(evil(), evil());
+///    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+///    |
+///    = note: this note originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+/// ```
+/// 
+/// </details>
+/// 
 /// # Alternatives
 /// 
 /// These are some alternatives to using this macro
@@ -197,9 +234,9 @@ mod none_delimited_tests;
 /// ```text
 /// error: Cannot prove that the arguments are equal.
 ///        This is their normalized representation:
-///        left: `(A) / (B)`
-///        right: `(2 + A) / (B)`
-///   --> src/macros.rs:169:26
+///        left: `A / B`
+///        right: `(2 + A) / B`
+///   --> src/macros.rs:229:26
 ///    |
 /// 12 |     TypeEq::NEW.in_array(gce_int_eq!(A / B, (A + 2) / B)).to_right(array)
 ///    |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

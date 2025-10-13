@@ -596,7 +596,7 @@ fn not_divlike(varlike: &Varlike) -> bool {
 
 fn polynomial_is_unparenth_numer(poly: &Polynomial) -> bool {
     poly.terms.len() == 0 || 
-    map_as_one_entry(&poly.terms).is_some_and(|(vars, coeff)| {
+    map_as_one_entry(&poly.terms).is_some_and(|(vars, _)| {
         vars.iter().all(|(varlike, _power)| not_divlike(varlike))
     })
 }
