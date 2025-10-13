@@ -19,7 +19,7 @@
 /// This macro supports a subset of valid Rust syntax in each expression:
 /// - `+`
 /// - `-`(unary and binary)
-/// - `*`
+/// - `*`(binary)
 /// - `&`(unary): for allowing expressions that borrow, has no effect on equality
 /// - `/`: some divisions with polynomials in both the numerator and denominator
 ///     may not be considered equal to other ways of writing them.
@@ -246,7 +246,7 @@
 /// 
 /// ### Division
 /// 
-/// This example 
+/// This example demonstrates this macro's ability to cancel out a fraction:
 /// 
 /// ```rust
 /// #![feature(generic_const_exprs)]
@@ -274,10 +274,10 @@
 /// 
 /// ```
 /// 
-/// ### Const equality
+/// ### Subtraction
 /// 
-/// This example demonstrates this macro's support for proving the equality of 
-/// expressions that write the constant in twow different ways.
+/// This example demonstrates this macro's ability to reason about 
+/// additions/subtractions over constants.
 /// 
 /// ```rust
 /// #![feature(generic_const_exprs)]
@@ -367,7 +367,7 @@
 /// 
 /// This macro allows arbitrary syntax to be passed through in braces (`{ ... }`),
 /// which is not normalized, it's only compared syntactically as 
-/// described in the [syntax] section.
+/// described in the [#syntax] section.
 /// 
 /// ```rust
 /// # #![allow(incomplete_features)]
