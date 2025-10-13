@@ -1,6 +1,6 @@
 [package]
 name = "typewit_gce_proc_macros"
-version = "0.1.0"
+version = "0.1.0-beta0"
 edition = "2024"
 authors = ["rodrimati1992 <rodrimatt1985@gmail.com>"]
 rust-version = "1.90.0"
