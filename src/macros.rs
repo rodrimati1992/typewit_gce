@@ -1,11 +1,3 @@
-#[cfg(test)]
-mod none_delimited_tests;
-
-
-
-
-
-
 
 /// Assert that the arguments are equivalent integer Generic Const Expressions 
 /// through a syntax-based analysis.
@@ -70,7 +62,7 @@ mod none_delimited_tests;
 /// <details>
 /// <summary> <b>Example of breaking the first assumption</b> </summary>
 /// 
-/// ```rust
+/// ```rust,compile_fail
 /// foo::<()>();
 /// 
 /// const fn foo<T>() {
@@ -316,6 +308,106 @@ mod none_delimited_tests;
 /// }
 /// ```
 /// 
+/// ### Non-array type
+/// 
+/// Demonstrates coercing a const-generic non-array type
+/// 
+/// ```rust
+/// #![feature(generic_const_exprs)]
+/// use typewit_gce::{const_marker::I8, TypeEq, gce_int_eq};
+/// 
+/// 
+/// assert_eq!(get_neg::<50, 3>(), [Value(-16); 2]);
+/// assert_eq!(get_neg::<50, 7>(), [Value(-7); 2]);
+/// 
+/// 
+/// #[derive(Debug, PartialEq, Eq, Copy, Clone)]
+/// struct Value<const N: i8>(i8);
+/// 
+/// const fn get_neg<const NUMER: i8, const DENOM: i8>() -> [Value<{-NUMER / DENOM}>; 2] 
+/// where
+///     I8<{NUMER / -DENOM}>:,
+/// {
+///     // Defines the `ValueFn` type-level function from I8<V> to Value<V>
+///     typewit_gce::type_fn!{
+///         struct ValueFn;
+///     
+///         impl<const V: i8> I8<V> => Value<V>
+///     }
+///     
+///     let (neg_numer, neg_denom): (Value<{-NUMER / DENOM}>, Value<{NUMER / -DENOM}>) =
+///         divide_negatives::<NUMER, DENOM>();
+///     
+///     // negative numerator and negative denominator are equivalent
+///     let coercer = gce_int_eq!(-NUMER / DENOM, NUMER / -DENOM)
+///         // Converts `TypeEq<I8<_>, I8<_>>` to `TypeEq<Value<_>, Value<_>>`
+///         .map(ValueFn);
+/// 
+///     // coerces `neg_denom` from `NUMER / -DENOM` to the equivalent `-NUMER / DENOM`
+///     let nonneg_denom: Value<{-NUMER / DENOM}> = coercer.to_left(neg_denom);
+///     
+///     [neg_numer, nonneg_denom]
+/// }
+/// 
+/// 
+/// const fn divide_negatives<const NUMER: i8, const DENOM: i8>() -> (
+///     Value<{-NUMER / DENOM}>,
+///     Value<{NUMER / -DENOM}>,
+/// ) {
+///     (divide::<{-NUMER}, DENOM>(), divide::<NUMER, {-DENOM}>())
+/// }
+/// 
+/// const fn divide<const NUMER: i8, const DENOM: i8>() -> Value<{NUMER / DENOM}> {
+///     Value(NUMER / DENOM)
+/// }
+/// 
+/// ```
+/// 
+/// ### Arbitrary syntax
+/// 
+/// This macro allows arbitrary syntax to be passed through in braces (`{ ... }`),
+/// which is not normalized, it's only compared syntactically as 
+/// described in the [syntax] section.
+/// 
+/// ```rust
+/// # #![allow(incomplete_features)]
+/// #![feature(generic_const_exprs)]
+/// use typewit_gce::{TypeEq, gce_int_eq};
+/// 
+/// 
+/// assert_eq!(concat_secret([3, 5, 8]), *b"hi\x03\x05\x08");
+/// 
+/// 
+/// fn concat_secret<const N: usize>(arr: [u8; N]) -> [u8; secret!().len() + N] 
+/// where
+///     [(); N + secret!().len()]:,
+/// {
+///     // `gce_int_eq` only allows calling macros in `{ ... }`.
+///     // remember: two instances of `{...}` in this macro must be 
+///     //           the same syntactically to be considered equal.
+///     let coercer = TypeEq::NEW
+///         .in_array(gce_int_eq!(N + {secret!().len()}, ({secret!().len()}) + N));
+///     
+///     let out: [u8; N + secret!().len()] = prefix_secret::<N>(arr);
+///     let out: [u8; secret!().len() + N] = coercer.to_right(out);
+///     out
+/// }
+/// 
+/// fn prefix_secret<const N: usize>(arr: [u8; N]) -> [u8; N + secret!().len()] {
+///     let mut out = [0u8; _];
+/// 
+///     out[..secret!().len()].copy_from_slice(secret!().as_bytes());
+///     out[secret!().len()..].copy_from_slice(&arr);
+/// 
+///     out
+/// }
+/// 
+/// 
+/// macro_rules! secret {
+///     () => { "hi" }
+/// } use secret;
+/// ```
+/// 
 /// ### Other coercions
 /// 
 /// This example showcases some more types that the compiler does not yet consider equal, 
@@ -388,6 +480,8 @@ macro_rules! gce_int_eq {
         $crate::__::assert_equal!{($crate) $lhs , $rhs}
 
         let mut marker = $crate::__GceIntEqHelper::NEW;
+
+        #[allow(unused_braces)]
         if false {
             $crate::__gce_int_eq__infer_if_no_type!{$($ty)?, marker, $lhs, $rhs};
             marker.infer_from_return()

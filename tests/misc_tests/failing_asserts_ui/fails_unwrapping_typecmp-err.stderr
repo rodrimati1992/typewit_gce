@@ -7,9 +7,9 @@ error[E0080]: evaluation panicked:
    |                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `typewit_gce::_::<impl typewit_gce::__GceIntEqHelper<usize, typewit_gce::const_marker::Usize<34>, typewit_gce::const_marker::Usize<44>>>::NEW` failed here
 
 note: erroneous constant encountered
-  --> tests/misc_tests/failing_asserts_ui/fails_unwrapping_typecmp-err.rs:11:9
-   |
-11 |     _ = typewit_gce::gce_int_eq!(sneaky(), sneaky());
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = note: this note originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+ --> tests/misc_tests/failing_asserts_ui/fails_unwrapping_typecmp-err.rs:8:9
+  |
+8 |     _ = typewit_gce::gce_int_eq!(sneaky(), sneaky());
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this note originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)

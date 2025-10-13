@@ -70,6 +70,29 @@ fn working_type_inference_from_args_test() {
 
 
 
+#[test]
+fn arbitrary_syntax_test() {
+    assert_eq!(foo::<2>([3, 5, 8, 13, 21]), [3, 5, 8, 13, 21]);
+
+    const fn foo<const N: usize>(arr: [u8; N + 3]) -> [u8; 3 + N] {
+        macro_rules! three { () => {3} }
+
+        TypeEq::NEW.in_array(gce_int_eq!(N + ({three!()}), ({three!()}) + N))
+            .to_right(arr)
+    }
+}
+
+
+// can't use generic function because "overly generic constant"...
+#[test]
+fn arbitrary_syntax_literals_test() {
+    const N: usize = 2;
+
+    let _: TypeEq<cm::Usize<5>, cm::Usize<5>> = gce_int_eq!(
+        N + ({ 1usize + 0b10 }), 
+        ({ 0o1usize + 0x2 }) + N
+    );
+}
 
 
 

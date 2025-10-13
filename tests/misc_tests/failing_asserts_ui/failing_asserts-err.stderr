@@ -107,3 +107,14 @@ error: Cannot prove that the arguments are equal.
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: Cannot prove that the arguments are equal.
+       This is their normalized representation:
+       left: `{ aaa(3)+1 }`
+       right: `{ bbb(3)+1 }`
+  --> tests/misc_tests/failing_asserts_ui/failing_asserts-err.rs:36:9
+   |
+36 |     _ = typewit_gce::gce_int_eq!({ aaa(3) + 1 }, { bbb(3) + 1 });
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)

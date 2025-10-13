@@ -32,6 +32,8 @@ where
     _ = typewit_gce::gce_int_eq!(aaa(3) / self::bbb(5), aaa(3) / (2 + self::bbb(5)));
 
     _ = typewit_gce::gce_int_eq!(aaa(3) % self::bbb(5), aaa(3) % (2 + self::bbb(5)));
+
+    _ = typewit_gce::gce_int_eq!({ aaa(3) + 1 }, { bbb(3) + 1 });
 }
 
 

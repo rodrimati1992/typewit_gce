@@ -30,7 +30,7 @@ path = "./typewit_gce_proc_macros"
 
 [dependencies.typewit]
 version = "1.14"
-features = ["rust_stable"]
+features = ["rust_1_83"]
 
 # no such thing as optional dev-dependencies, aaaaaaah
 [dependencies.trybuild]

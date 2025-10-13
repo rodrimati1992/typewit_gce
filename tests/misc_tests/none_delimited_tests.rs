@@ -1,4 +1,4 @@
-use crate::gce_int_eq;
+use typewit_gce::gce_int_eq;
 
 
 const fn func() -> usize { 

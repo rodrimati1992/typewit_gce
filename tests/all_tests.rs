@@ -5,5 +5,6 @@
 mod misc_tests {
     mod ui_tests;
     mod gce_int_eq_tests;
+    mod none_delimited_tests;
     mod test_utils;
 }
