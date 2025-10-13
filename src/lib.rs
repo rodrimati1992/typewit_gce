@@ -28,7 +28,7 @@ pub use typewit;
 pub use typewit::*;
 
 
-mod macros;
+mod gce_int_eq_macro;
 
 #[doc(hidden)]
 pub mod __ {
