@@ -37,12 +37,12 @@ fn interpret_poly_inner(
     let mut poly_val = BigInt::ZERO;
 
     for (poly_vars, coeff) in &poly.terms {
-        let mut term_val = coeff.clone();
+        let mut term_val: BigInt = (*coeff).into();
 
         for varlike in poly_vars
             .iter()
             .flat_map(|(varlike, power)| {
-                let power = usize::try_from(power).unwrap();
+                let power = usize::try_from(power.get()).unwrap();
                 (0..power).map(move|_| varlike)
             }) 
         { 

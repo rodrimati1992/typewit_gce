@@ -1,8 +1,5 @@
 use std::iter::{self, FromIterator, Once};
 
-use num_bigint::{BigInt, BigUint};
-
-
 #[allow(unused_imports)]
 use crate::used_proc_macro::{
     Delimiter, Group, Ident, Literal, Punct, Spacing, Span, TokenStream, TokenTree,
@@ -13,22 +10,6 @@ use crate::used_proc_macro::{
 pub(crate) struct CrateToken {
     pub(crate) krate: crate::used_proc_macro::TokenStream,
 }
-
-
-
-pub(crate) fn bi_eq(bi: &BigInt, num: i128) -> bool {
-    match i128::try_from(bi) {
-        Ok(rhs) => num == rhs,
-        Err(_) => false,
-    }
-}
-pub(crate) fn bu_eq(bu: &BigUint, num: u128) -> bool {
-    match u128::try_from(bu) {
-        Ok(rhs) => num == rhs,
-        Err(_) => false,
-    }
-}
-
 
 
 pub(crate) fn ident_token(ident: &str, span: Span) -> Once<TokenTree> {

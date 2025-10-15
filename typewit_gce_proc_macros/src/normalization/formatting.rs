@@ -1,9 +1,4 @@
-use crate::utils::bu_eq;
-
 use super::{Coefficient, FunctionCall, Polynomial, Varlike, Vars};
-
-use num_bigint::BigUint;
-use num_traits::Signed;
 
 use std::fmt::{self, Display};
 
@@ -36,14 +31,14 @@ impl Display for Polynomial {
 }
 
 fn fmt_term(vars: &Vars, coeff: &Coefficient, f: &mut fmt::Formatter) -> fmt::Result {
-    let abs_coeff = coeff.magnitude();
-    let mut print_mul = !bu_eq(&abs_coeff, 1) || vars.is_empty();
+    let abs_coeff = coeff.mag_prim();
+    let mut print_mul = abs_coeff != 1 || vars.is_empty();
     if print_mul {
         write!(f, "{abs_coeff}")?;
     }
 
     for (varlike, power) in vars {
-        let powered = *power > BigUint::from(1u8);
+        let powered = power.get() > 1;
 
         if std::mem::replace(&mut print_mul, true) {
             write!(f, " * ")?;

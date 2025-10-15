@@ -3,13 +3,10 @@
 
 use crate::{
     error::Error,
+    i129::I129,
     used_proc_macro::{self, Delimiter, Group, Punct, Spacing, Span, TokenTree as TT},
     unevaled_expr::UnevaledExpr,
-    utils::bi_eq,
 };
-
-
-use num_bigint::BigInt;
 
 
 #[cfg(test)]
@@ -28,7 +25,7 @@ pub(crate) struct UnnormPolynomialTerm {
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum UnnormMulExpr {
-    Constant(BigInt),
+    Constant(I129),
     Variable(String),
     UnevaledExpr(UnevaledExpr),
     FunctionCall(UnnormFunctionCall),
@@ -131,10 +128,7 @@ fn parse_term_inner(
             let mut rhs = Vec::new();
             parse_mul_subexpr(&mut rhs, parser)?;
 
-            let remm = if let [UnnormMulExpr::Constant(lit)] = &rhs[..] && bi_eq(lit, 1) {
-                // `X % 1 == X * 0` 
-                UnnormMulExpr::Constant(BigInt::ZERO)
-            } else {                
+            let remm = {                
                 let lhs = UnnormPolynomialTerm { 
                     mul_exprs: term.mul_exprs.drain(..).collect(),
                 };
@@ -147,16 +141,13 @@ fn parse_term_inner(
             let mut rhs = Vec::new();
             parse_mul_subexpr(&mut rhs, parser)?;
 
-            // `X / 1 == X` so nothing is added in that case
-            if !matches!(&rhs[..], [UnnormMulExpr::Constant(lit)] if bi_eq(lit, 1)) {
-                let lhs = UnnormPolynomialTerm { 
-                    mul_exprs: term.mul_exprs.drain(..).collect(),
-                };
-                let rhs = UnnormPolynomialTerm { mul_exprs: rhs };
-                term.mul_exprs.push(
-                    UnnormMulExpr::FunctionCall(UnnormFunctionCall::Div(lhs, rhs))
-                );
-            }
+            let lhs = UnnormPolynomialTerm { 
+                mul_exprs: term.mul_exprs.drain(..).collect(),
+            };
+            let rhs = UnnormPolynomialTerm { mul_exprs: rhs };
+            term.mul_exprs.push(
+                UnnormMulExpr::FunctionCall(UnnormFunctionCall::Div(lhs, rhs))
+            );
         } else if let Some(tt) = parser.peek() {
             if end_of_term(&tt) {
                 return Ok(());
@@ -226,7 +217,7 @@ fn opt_parse_neg(parser: &mut Parser) -> Option<Signedness> {
         }
 
         Some(if neg == -1 {
-            Signedness::Negative(UnnormMulExpr::Constant(BigInt::from(neg)))
+            Signedness::Negative(UnnormMulExpr::Constant(I129::from(neg)))
         } else {
             Signedness::Positive
         })
@@ -326,7 +317,7 @@ fn parse_path(parser: &mut Parser) -> Result<String, Error> {
 }
 
 fn parse_int(span: Span, str: &str) -> Result<UnnormMulExpr, Error> {
-    crate::unevaled_expr::parse_bigint(span, str)
+    crate::unevaled_expr::parse_i129(span, str)
         .map(UnnormMulExpr::Constant)
 }
 

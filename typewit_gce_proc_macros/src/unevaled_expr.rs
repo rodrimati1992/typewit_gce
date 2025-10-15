@@ -1,16 +1,12 @@
 use crate::{
+    i129::I129,
     used_proc_macro::{Delimiter, Span, TokenTree, TokenStream},
     error::Error,
 };
 
-use num_bigint::BigInt;
-
-use num_traits::Num;
-
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct UnevaledExpr(String);
-
 
 
 impl UnevaledExpr {
@@ -29,7 +25,7 @@ impl UnevaledExpr {
             match tt {
                 TokenTree::Literal(lit) => {
                     let unparsed = lit.to_string();
-                    out.push_str(&match parse_bigint(lit.span(), &unparsed) {
+                    out.push_str(&match parse_i129(lit.span(), &unparsed) {
                         Ok(x) => x.to_string(),
                         Err(_) => unparsed,
                     });
@@ -63,7 +59,7 @@ impl UnevaledExpr {
 
 
 
-pub fn parse_bigint(span: Span, mut str: &str) -> Result<BigInt, Error> {
+pub fn parse_i129(span: Span, mut str: &str) -> Result<I129, Error> {
     let base;
     (base, str) = if let Some(stripped) = str.strip_prefix("0b") {
         (2, stripped)
@@ -79,7 +75,7 @@ pub fn parse_bigint(span: Span, mut str: &str) -> Result<BigInt, Error> {
         str = x;
     }
 
-    BigInt::from_str_radix(&str.trim().replace("_", ""), base)
+    I129::from_str_radix(&str.trim().replace("_", ""), base)
         .map_err(|_| Error::new(span, "could not parse as integer"))
 }
 

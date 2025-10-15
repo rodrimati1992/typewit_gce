@@ -24,8 +24,8 @@ pub(super) fn make_polynomial(vect: Vec<(Vec<(Varlike, u128)>, i128)>) -> Polyno
         terms: vect
             .into_iter()
             .map(|(vars, coeff)| (
-                vars.into_iter().map(|(var, pow)| (var, pow.into())).collect(), 
-                coeff.into(),
+                vars.into_iter().map(|(var, pow)| (var, pow.try_into().unwrap())).collect(), 
+                coeff.try_into().unwrap(),
             ))
             .collect()
     }
