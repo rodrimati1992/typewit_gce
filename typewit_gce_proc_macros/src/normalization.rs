@@ -82,22 +82,22 @@ pub(crate) enum FunctionCall {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum NormErr {
-    Overflow,
-    ZeroDenom,
+    Overflow(OverflowErr),
+    ZeroDenom(Rc<Polynomial>),
 }
 
 impl From<OverflowErr> for NormErr {
-    fn from(_: OverflowErr) -> Self {
-        Self::Overflow
+    fn from(x: OverflowErr) -> Self {
+        Self::Overflow(x)
     }
 }
 
 impl Display for NormErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(match *self {
-            Self::Overflow => "numeric overflow",
-            Self::ZeroDenom => "encountered zero denominator",
-        })
+        match self {
+            Self::Overflow(x) => Display::fmt(x, f),
+            Self::ZeroDenom(x) => write!(f, "attempted to divide `{x}` by zero"),
+        }
     }
 }
 
@@ -200,7 +200,7 @@ fn unexpanded_normalize_term(
                         remove_term = true;
                         continue 'sube
                     },
-                    Err(IntErr::Overflow) => return Err(NormErr::Overflow),
+                    Err(IntErr::Overflow(x)) => return Err(NormErr::Overflow(x)),
                 }
             )
         }
@@ -294,20 +294,20 @@ fn normalize_rem(
         numerator, 
         denominator, 
         reduce_fractions, 
+        |a, b| (a, b),
         |sign_numer, _| sign_numer, 
         |_, _| Ok(()),
     )?;
 
     if reduce_fractions.is_yes() {
         match (map_as_one_entry(&numer_poly.terms), map_as_one_entry(&denom_poly.terms)) {
-            (Some((_, numer_coeff)), _) if *numer_coeff == 0 => {
-                return Ok(NormalizedRemainder::Integer(None))
-            }
+            // ... % 1
             (_, Some((denom_vars, denom_coeff))) 
             if *denom_coeff == 1 && denom_vars.is_empty() 
             => {
                 return Ok(NormalizedRemainder::Integer(None))
             }
+            // 0 % ...
             _ if numer_poly.terms.is_empty() => {
                 return Ok(NormalizedRemainder::Integer(None))
             }
@@ -333,6 +333,7 @@ fn normalize_fraction(
     numerator: UnnormPolynomialTerm,
     denominator: UnnormPolynomialTerm,
     reduce_fractions: SimplifyFraction,
+    common_factor_divider: impl Fn(Term, Term) -> (Term, Term),
     map_sign: impl Fn(Sign, Sign) -> Sign,
     mut on_simplified_to_int: impl FnMut(Vars, Coefficient) -> Result<(), NormErr>
 ) -> Result<(Polynomial, Polynomial, Sign), NormErr> {
@@ -344,7 +345,7 @@ fn normalize_fraction(
 
     // division by zero!
     if denom_poly.terms.is_empty() {
-        return Err(NormErr::ZeroDenom);
+        return Err(NormErr::ZeroDenom(numer_poly.into()));
     }
 
     let mut sign_out = Sign::Pos;
@@ -376,7 +377,7 @@ fn normalize_fraction(
         let mut fact_numer = extract_common_factor(&mut numer_poly)?;
         let mut fact_denom = extract_common_factor(&mut denom_poly)?;
         
-        (fact_numer, fact_denom) = div_term(fact_numer, fact_denom);
+        (fact_numer, fact_denom) = common_factor_divider(fact_numer, fact_denom);
 
         {
             sign_out = map_sign(fact_numer.coeff.sign(), fact_denom.coeff.sign());
@@ -411,6 +412,7 @@ fn normalize_div(
         numerator,
         denominator,
         reduce_fractions,
+        div_term,
         |sign_numer, sign_denom| sign_numer * sign_denom,
         |out_vars, out_coeff| insert_term(&mut out_poly, out_vars, out_coeff)
     )?;
@@ -421,11 +423,9 @@ fn normalize_div(
 
     let integer_div = match (
         map_as_one_entry(&numer_poly.terms), 
-        map_as_one_entry(&denom_poly.terms)
+        map_as_one_entry(&denom_poly.terms),
     ) {
-        (Some((_, numer_coeff)), _) if *numer_coeff == 0 => {
-            Some(IntegerDivision(None))
-        }
+        // 0 / ...
         _ if numer_poly.terms.is_empty() => {
             Some(IntegerDivision(None))
         }
@@ -484,7 +484,7 @@ fn insert_term(
         MapEntry::Occupied(en) => match { en.get().try_add(coeff) } {
             Ok(res) => *en.into_mut() = res,
             Err(IntErr::IsZero) => _ = en.remove(),
-            Err(IntErr::Overflow) => return Err(NormErr::Overflow),
+            Err(IntErr::Overflow(x)) => return Err(NormErr::Overflow(x)),
         },
     }
     Ok(())
@@ -500,7 +500,10 @@ fn insert_var(
         MapEntry::Occupied(en) => {
             match { en.get().checked_add(pow.get()) } {
                 Some(res) => *en.into_mut() = res,
-                None => return Err(NormErr::Overflow),
+                None => {
+                    let err = OverflowErr::new((*en.get()).into(), &"+", pow.into());
+                    return Err(NormErr::Overflow(err))
+                }
             }
         }
     }

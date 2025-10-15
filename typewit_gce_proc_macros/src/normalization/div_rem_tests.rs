@@ -63,6 +63,20 @@ fn test_rem_constants() {
     asse_eq("", "2 % 3 = 2");
     asse_eq("", "3 % 3 = 0");
     asse_eq("", "4 % 3 = 1");
+    
+
+    asse_eq("", "0 % 4 = 0");
+    asse_eq("", "1 % 4 = 1");
+    asse_eq("", "2 % 4 = 2");
+    asse_eq("", "3 % 4 = 3");
+    asse_eq("", "4 % 4 = 0");
+    asse_eq("", "5 % 4 = 1");
+    asse_eq("", "6 % 4 = 2");
+    asse_eq("", "7 % 4 = 3");
+    asse_eq("", "8 % 4 = 0");
+    asse_eq("", "9 % 4 = 1");
+    asse_eq("", "10 % 4 = 2");
+    asse_eq("", "11 % 4 = 3");
 }
 
 #[test]
@@ -101,6 +115,24 @@ fn test_rem_poly_numerator() {
     asse_eq("x,y", "(x * y + 1) % x = 1 % x");
 }
 
+
+#[test]
+fn test_div_constants() {
+    asse_eq("", "0 / 4 = 0");
+    asse_eq("", "1 / 4 = 0");
+    asse_eq("", "2 / 4 = 0");
+    asse_eq("", "3 / 4 = 0");
+    asse_eq("", "4 / 4 = 1");
+    asse_eq("", "5 / 4 = 1");
+    asse_eq("", "6 / 4 = 1");
+    asse_eq("", "7 / 4 = 1");
+    asse_eq("", "8 / 4 = 2");
+    asse_eq("", "9 / 4 = 2");
+    asse_eq("", "10 / 4 = 2");
+    asse_eq("", "11 / 4 = 2");
+    asse_eq("", "12 / 4 = 3");
+
+}
 
 #[test]
 fn test_div_sign() {

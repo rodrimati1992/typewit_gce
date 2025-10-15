@@ -82,7 +82,7 @@ mod nonzerobigint {
             };
 
             if overflow && self.is_negative == rhs.is_negative {
-                Err(IntErr::Overflow)
+                Err(IntErr::Overflow(OverflowErr::new(self, &"+", rhs)))
             } else if let Some(mag) = NonZeroU128::new(mag) {
                 Ok(Self {
                     is_negative: if self.is_negative == rhs.is_negative {
@@ -104,7 +104,7 @@ mod nonzerobigint {
                     magnitude: mag,
                 })
             } else {                
-                Err(OverflowErr)
+                Err(OverflowErr::new(self, &"*", rhs))
             }
         }
 
@@ -270,11 +270,27 @@ impl IsZeroOk for Result<NonZeroI129, IsZeroErr> {
 ////////////////////////////////////////////////////////////////////
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct OverflowErr;
+pub(crate) struct OverflowErr {
+    lhs: NonZeroI129,
+    op: &'static &'static str,
+    rhs: NonZeroI129,
+}
+
+impl OverflowErr {
+    pub(crate) fn new(lhs: NonZeroI129, op: &'static &'static str, rhs: NonZeroI129) -> Self {
+        Self { lhs, op, rhs }
+    }
+}
 
 impl Display for OverflowErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("numeric overflow")
+        write!(
+            f,
+            "overflow while computing `{} {} {}`",
+            self.lhs,
+            self.op,
+            self.rhs,
+        )
     }
 }
 
@@ -284,13 +300,13 @@ impl core::error::Error for OverflowErr {}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum IntErr {
-    Overflow,
+    Overflow(OverflowErr),
     IsZero,
 }
 
 impl From<OverflowErr> for IntErr {
-    fn from(_: OverflowErr) -> Self {
-        Self::Overflow
+    fn from(x: OverflowErr) -> Self {
+        Self::Overflow(x)
     }
 }
 
@@ -302,8 +318,8 @@ impl From<IsZeroErr> for IntErr {
 
 impl Display for IntErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match *self {
-            Self::Overflow => f.write_str("numeric overflow"),
+        match self {
+            Self::Overflow(x) => Display::fmt(x, f),
             Self::IsZero => Display::fmt(&IsZeroErr, f),
         }
     }
@@ -367,7 +383,7 @@ mod tests {
             );
             assert_eq!(
                 new(sign, u128::MAX - 2).try_add(new(sign, 3)).unwrap_err(),
-                IntErr::Overflow,
+                IntErr::Overflow(OverflowErr::new(new(sign, u128::MAX - 2), &"+", new(sign, 3))),
             );
         }
     }
@@ -426,7 +442,7 @@ mod tests {
             );
             assert_eq!(
                 new(lhs_sign, u64max + 1).try_mul(new(rhs_sign, u64max + 1)).unwrap_err(), 
-                OverflowErr
+                OverflowErr::new(new(lhs_sign, u64max + 1), &"*", new(rhs_sign, u64max + 1))
             );
         }
     }

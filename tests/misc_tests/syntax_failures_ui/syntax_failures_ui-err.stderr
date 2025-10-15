@@ -1,3 +1,9 @@
+error: invalid digit for a base 2 literal
+  --> tests/misc_tests/syntax_failures_ui/syntax_failures_ui-err.rs:20:32
+   |
+20 |     typewit_gce::gce_int_eq!(0b3, 0u8);
+   |                                ^
+
 error: this macro doesn't support this syntax
  --> tests/misc_tests/syntax_failures_ui/syntax_failures_ui-err.rs:3:32
   |
@@ -75,5 +81,19 @@ error: this macro doesn't support this syntax
    |
 16 |     typewit_gce::gce_int_eq!(3 / !5, 3 / !5, i8);
    |                                  ^
+   |
+   = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: could not parse `0b3` as integer literal because: invalid digit found in string
+  --> tests/misc_tests/syntax_failures_ui/syntax_failures_ui-err.rs:20:30
+   |
+20 |       typewit_gce::gce_int_eq!(0b3, 0u8);
+   |  _____-------------------------^--------
+   | |     |
+   | |     in this macro invocation
+21 | | };
+22 | |
+23 | | fn main(){}
+...  |
    |
    = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)

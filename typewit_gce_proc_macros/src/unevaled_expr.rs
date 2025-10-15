@@ -62,9 +62,10 @@ impl UnevaledExpr {
 
 
 
-pub fn parse_i129(span: Span, mut str: &str) -> Result<I129, Error> {
+pub fn parse_i129(span: Span, str: &str) -> Result<I129, Error> {
     let base;
-    (base, str) = if let Some(stripped) = str.strip_prefix("0b") {
+    let mut stripped;
+    (base, stripped) = if let Some(stripped) = str.strip_prefix("0b") {
         (2, stripped)
     } else if let Some(stripped) = str.strip_prefix("0o") {
         (8, stripped)
@@ -74,12 +75,25 @@ pub fn parse_i129(span: Span, mut str: &str) -> Result<I129, Error> {
         (10, str)
     };
 
-    if let Some((x, _)) = str.split_once(|c: char| matches!(c, 'g'..='z' | 'G'..='Z')) {
-        str = x;
+    if let Some((x, _)) = stripped.split_once(|c: char| matches!(c, 'g'..='z' | 'G'..='Z')) {
+        stripped = x;
     }
 
-    I129::from_str_radix(&str.trim().replace("_", ""), base)
-        .map_err(|_| Error::new(span, "could not parse as integer"))
+    I129::from_str_radix(&stripped.trim().replace("_", ""), base)
+        .map_err(|e| {
+            use std::num::IntErrorKind as IEK;
+
+            let msg = match e.kind() {
+                IEK::PosOverflow | IEK::NegOverflow => {
+                    format!("integer literal is too large: {str}")
+                }
+                _ => {
+                    format!("could not parse `{str}` as integer literal because: {e}")
+                }
+            };
+
+            Error::new(span, msg)
+        })
 }
 
 

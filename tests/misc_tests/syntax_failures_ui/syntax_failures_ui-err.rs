@@ -16,4 +16,8 @@ const _: () = {
     typewit_gce::gce_int_eq!(3 / !5, 3 / !5, i8);
 };
 
+const _: () = {
+    typewit_gce::gce_int_eq!(0b3, 0u8);
+};
+
 fn main(){}

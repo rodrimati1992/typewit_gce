@@ -54,10 +54,12 @@
 /// 2. the arithmetic operators (`+`, `-`, `*`, `/`, and `%`) don't cause integer overflow
 /// 3. division and remainder don't have a denominator of 0
 /// 
-/// Assumptions 2 and 3 are currently guaranteed by the compiler.
+/// Assumptions 2 and 3 are currently guaranteed by the compiler,
+/// and *in some (non-guaranteed) cases* also detected by this macro.
 /// 
 /// If those assumptions are broken,
 /// this macro causes a const panic when the function that uses this macro is compiled.
+/// 
 /// 
 /// <details>
 /// <summary> <b>Example of breaking the first assumption</b> </summary>
