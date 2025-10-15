@@ -6,7 +6,7 @@ use crate::{
 
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct UnevaledExpr(String);
+pub struct UnevaledExpr(pub(crate) String);
 
 
 impl UnevaledExpr {
@@ -22,7 +22,7 @@ impl UnevaledExpr {
 
     fn new_inner(out: &mut String, ts: TokenStream) {
         for tt in ts {
-            match tt {
+            match &tt {
                 TokenTree::Literal(lit) => {
                     let unparsed = lit.to_string();
                     out.push_str(&match parse_i129(lit.span(), &unparsed) {
@@ -52,6 +52,9 @@ impl UnevaledExpr {
                     // if Spacing was taking into account.
                     out.push(p.as_char());
                 }
+            }
+            if !matches!(tt, TokenTree::Punct(_)) {
+                out.push(' ');
             }
         }
     }
