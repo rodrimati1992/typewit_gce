@@ -158,6 +158,45 @@ fn test_noncommutative() {
 }
 
 #[test]
+fn test_add_consts() {
+    for x in -10..=10 {
+        for y in -10..=10 {
+            for w in -10..=10 {
+                if x + y == 0 {
+                    asse_eq("z", &format!("{x} * z + {y} * z + {w} = {w}"));
+                } else {
+                    asse_eq("z", &format!("{x} * z + {y} * z + {w} = {} * z + {w}", x + y));
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn test_sub_consts() {
+    for x in -10..=10 {
+        for y in -10..=10 {
+            for w in -10..=10 {
+                if x - y == 0 {
+                    asse_eq("z", &format!("{x} * z - {y} * z + {w} = {w}"));
+                } else {
+                    asse_eq("z", &format!("{x} * z - {y} * z + {w} = {} * z + {w}", x - y));
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn test_mul_consts() {
+    for x in -10..=10 {
+        for y in -10..=10 {
+            asse_eq("z", &format!("{x} * {y} * z = {} * z", x * y));
+        }
+    }
+}
+
+#[test]
 fn test_mul_sign() {
     asse_eq("x", "( x) * ( x) = x * x");
     asse_eq("x", "( x) * (-x) = - (x * x)");

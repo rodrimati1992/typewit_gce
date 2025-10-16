@@ -80,6 +80,23 @@ fn test_rem_constants() {
 }
 
 #[test]
+fn test_rem_mul_one_var() {
+    asse_eq("x", "x * 0 % 4 = 0");
+    asse_eq("x", "x * 1 % 4 = x % 4");
+    asse_eq("x", "x * 2 % 4 = x * 2 % 4");
+    asse_eq("x", "x * 3 % 4 = (x * 3) % 4");
+    asse_eq("x", "x * 4 % 4 = 0");
+    asse_eq("x", "x * 5 % 4 = (x * 5) % 4");
+    asse_eq("x", "x * 6 % 4 = (x * 6) % 4");
+    asse_eq("x", "x * 7 % 4 = (x * 7) % 4");
+    asse_eq("x", "x * 8 % 4 = 0");
+    asse_eq("x", "x * 9 % 4 = (x * 9) % 4");
+    asse_eq("x", "x * 10 % 4 = (x * 10) % 4");
+    asse_eq("x", "x * 11 % 4 = (x * 11) % 4");
+    asse_eq("x", "x * 12 % 4 = 0");
+}
+
+#[test]
 fn test_rem_sign() {
     asse_eq("x,y", "x % y   =   (x % y)");
     asse_eq("x,y", "-x % y  = - (x % y)");
@@ -131,7 +148,23 @@ fn test_div_constants() {
     asse_eq("", "10 / 4 = 2");
     asse_eq("", "11 / 4 = 2");
     asse_eq("", "12 / 4 = 3");
+}
 
+#[test]
+fn test_div_one_var() {
+    asse_eq("x", "x * 0 / 4 = 0");
+    asse_eq("x", "x * 1 / 4 = x / 4");
+    asse_eq("x", "x * 2 / 4 = x / 2");
+    asse_eq("x", "x * 3 / 4 = (x * 3) / 4");
+    asse_eq("x", "x * 4 / 4 = x");
+    asse_eq("x", "x * 5 / 4 = (x * 5) / 4");
+    asse_eq("x", "x * 6 / 4 = (x * 3) / 2");
+    asse_eq("x", "x * 7 / 4 = (x * 7) / 4");
+    asse_eq("x", "x * 8 / 4 = x * 2");
+    asse_eq("x", "x * 9 / 4 = (x * 9) / 4");
+    asse_eq("x", "x * 10 / 4 = (x * 5) / 2");
+    asse_eq("x", "x * 11 / 4 = (x * 11) / 4");
+    asse_eq("x", "x * 12 / 4 = x * 3");
 }
 
 #[test]
