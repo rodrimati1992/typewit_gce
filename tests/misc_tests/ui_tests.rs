@@ -12,6 +12,7 @@
 fn ui() {
     let t = trybuild::TestCases::new();
     for dir in [
+        "overflow_failures_ui",
         "type_failures_ui",
         "syntax_failures_ui",
         "failing_asserts_ui",

@@ -1,0 +1,92 @@
+error: integer literal is too large: 340_282_366_920_938_463_463_374_607_431_768_211_456u128
+ --> tests/misc_tests/overflow_failures_ui/overflowing-exprs-err.rs:3:9
+  |
+2 | /      typewit_gce::gce_int_eq!(
+3 | |/         340_282_366_920_938_463_463_374_607_431_768_211_456u128,
+4 | ||         340_282_366_920_938_463_463_374_607_431_768_211_455u128,
+5 | ||     );
+  | ||_____- in this macro invocation
+...  |
+  |
+  = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: overflow while computing `340282366920938463463374607431768211455 + 1`
+  --> tests/misc_tests/overflow_failures_ui/overflowing-exprs-err.rs:9:5
+   |
+ 9 | /     typewit_gce::gce_int_eq!(
+10 | |         340_282_366_920_938_463_463_374_607_431_768_211_455u128 + 1,
+11 | |         340_282_366_920_938_463_463_374_607_431_768_211_455u128,
+12 | |     );
+   | |_____^
+   |
+   = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: overflow while computing `340282366920938463463374607431768211454 + 2`
+  --> tests/misc_tests/overflow_failures_ui/overflowing-exprs-err.rs:13:5
+   |
+13 | /     typewit_gce::gce_int_eq!(
+14 | |         340_282_366_920_938_463_463_374_607_431_768_211_454u128 + (10 % 4),
+15 | |         340_282_366_920_938_463_463_374_607_431_768_211_454u128,
+16 | |     );
+   | |_____^
+   |
+   = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: overflow while computing `-340282366920938463463374607431768211455 * 2`
+  --> tests/misc_tests/overflow_failures_ui/overflowing-exprs-err.rs:20:5
+   |
+20 | /     typewit_gce::gce_int_eq!(
+21 | |         -340_282_366_920_938_463_463_374_607_431_768_211_455i128 * 2 - 2,
+22 | |         340_282_366_920_938_463_463_374_607_431_768_211_455i128 * 2,
+23 | |     );
+   | |_____^
+   |
+   = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: overflow while computing `340282366920938463463374607431768211455 * 2`
+  --> tests/misc_tests/overflow_failures_ui/overflowing-exprs-err.rs:27:5
+   |
+27 | /     typewit_gce::gce_int_eq!(
+28 | |         340_282_366_920_938_463_463_374_607_431_768_211_455u128 * 2,
+29 | |         340_282_366_920_938_463_463_374_607_431_768_211_455u128,
+30 | |     );
+   | |_____^
+   |
+   = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: overflow while computing `340282366920938463463374607431768211455 * 2`
+  --> tests/misc_tests/overflow_failures_ui/overflowing-exprs-err.rs:36:5
+   |
+36 | /     typewit_gce::gce_int_eq!(
+37 | |         0 * X * 340_282_366_920_938_463_463_374_607_431_768_211_455u128 * 2,
+38 | |         100u128,
+39 | |     );
+   | |_____^
+   |
+   = note: this error originates in the macro `typewit_gce::gce_int_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: integer literal is too large
+ --> tests/misc_tests/overflow_failures_ui/overflowing-exprs-err.rs:3:9
+  |
+3 |         340_282_366_920_938_463_463_374_607_431_768_211_456u128,
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: value exceeds limit of `340282366920938463463374607431768211455`
+
+error[E0080]: attempt to compute `u128::MAX + 1_u128`, which would overflow
+  --> tests/misc_tests/overflow_failures_ui/overflowing-exprs-err.rs:10:9
+   |
+10 |         340_282_366_920_938_463_463_374_607_431_768_211_455u128 + 1,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `overflowing_add::{constant#0}` failed here
+
+error[E0080]: attempt to compute `340282366920938463463374607431768211454_u128 + 2_u128`, which would overflow
+  --> tests/misc_tests/overflow_failures_ui/overflowing-exprs-err.rs:14:9
+   |
+14 |         340_282_366_920_938_463_463_374_607_431_768_211_454u128 + (10 % 4),
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `overflowing_add::{constant#2}` failed here
+
+error[E0080]: attempt to compute `u128::MAX * 2_u128`, which would overflow
+  --> tests/misc_tests/overflow_failures_ui/overflowing-exprs-err.rs:28:9
+   |
+28 |         340_282_366_920_938_463_463_374_607_431_768_211_455u128 * 2,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `overflowing_mul::{constant#0}` failed here

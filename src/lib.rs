@@ -7,7 +7,7 @@
 //! 
 //! # Example
 //! 
-//! Currently (2025-10-13), 
+//! As of 2025-10-13, 
 //! rustc does not allow using a generic `[T; N * M]` where `[T; M * N]` is expected,
 //! so this code:
 //! ```rust,compile_fail

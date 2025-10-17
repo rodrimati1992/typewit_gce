@@ -37,13 +37,14 @@ fn interpret_poly_inner(
     let mut poly_val = BigInt::ZERO;
 
     for (poly_vars, coeff) in &poly.terms {
-        let mut term_val = coeff.clone();
+        let mut term_val: BigInt = (*coeff).into();
 
         for varlike in poly_vars
+            .vars()
             .iter()
             .flat_map(|(varlike, power)| {
-                let power = usize::try_from(power).unwrap();
-                (0..power).map(move|_| varlike)
+                let power = usize::try_from(power.get()).unwrap();
+                std::iter::repeat_n(varlike, power)
             }) 
         { 
 
@@ -71,7 +72,7 @@ fn interpret_poly_inner(
                         .checked_div(&interpret_poly_inner(denom, vars)?)
                         .ok_or_else(|| InterpreterError::ZeroDenom)?
                 }
-                // an arbitrary function `foo(bar, baz)` is treated as though foo it is
+                // an arbitrary function `foo(bar, baz)` is treated as though foo is
                 // `(foo * (bar + baz))`
                 Varlike::FunctionCall(FC::Other {name, args}) => {
                     let name: &str = name;

@@ -1,15 +1,24 @@
 use crate::{
     error::Error,
     utils::CrateToken,
+    unevaled_expr::UnevaledExpr,
     SimplifyFraction,
 };
 
-use super::{Polynomial, Varlike};
+use super::{FunctionCall, Polynomial, Varlike};
 
 use num_bigint::BigInt;
 
 use itertools::Itertools;
 
+
+pub(super) fn repeat_pair<T: Clone>(x: T) -> (T, T) {
+    (x.clone(), x)
+}
+
+pub(super) fn pair_as_ref<T>((l, r): &(T, T)) -> (&T, &T) {
+    (l, r)
+}
 
 pub(super) fn polynomial_1term(vars: Vec<(Varlike, u128)>, coeff: i128) -> Polynomial {
     make_polynomial(vec![(vars, coeff.into())])
@@ -24,8 +33,8 @@ pub(super) fn make_polynomial(vect: Vec<(Vec<(Varlike, u128)>, i128)>) -> Polyno
         terms: vect
             .into_iter()
             .map(|(vars, coeff)| (
-                vars.into_iter().map(|(var, pow)| (var, pow.into())).collect(), 
-                coeff.into(),
+                vars.into_iter().map(|(var, pow)| (var, pow.try_into().unwrap())).collect(), 
+                coeff.try_into().unwrap(),
             ))
             .collect()
     }
@@ -149,11 +158,85 @@ fn test_noncommutative() {
 }
 
 #[test]
+fn test_add_consts() {
+    for x in -10..=10 {
+        for y in -10..=10 {
+            for w in -10..=10 {
+                if x + y == 0 {
+                    asse_eq("z", &format!("{x} * z + {y} * z + {w} = {w}"));
+                } else {
+                    asse_eq("z", &format!("{x} * z + {y} * z + {w} = {} * z + {w}", x + y));
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn test_sub_consts() {
+    for x in -10..=10 {
+        for y in -10..=10 {
+            for w in -10..=10 {
+                if x - y == 0 {
+                    asse_eq("z", &format!("{x} * z - {y} * z + {w} = {w}"));
+                } else {
+                    asse_eq("z", &format!("{x} * z - {y} * z + {w} = {} * z + {w}", x - y));
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn test_mul_consts() {
+    for x in -10..=10 {
+        for y in -10..=10 {
+            asse_eq("z", &format!("{x} * {y} * z = {} * z", x * y));
+        }
+    }
+}
+
+#[test]
 fn test_mul_sign() {
     asse_eq("x", "( x) * ( x) = x * x");
     asse_eq("x", "( x) * (-x) = - (x * x)");
     asse_eq("x", "(-x) * ( x) = - (x * x)");
     asse_eq("x", "(-x) * (-x) = x * x");
+}
+
+#[test]
+fn test_function_repr() {
+    fn f_var(arg0: Polynomial, arg1: Polynomial) -> Varlike {
+        Varlike::FunctionCall(FunctionCall::Other{
+            name: "f".into(),
+            args: vec![ arg0, arg1 ].into()
+        })
+    }
+    let x_var = Varlike::Variable("x".into());
+    let y_var = Varlike::Variable("y".into());
+
+    let lit = "f(2 * 3, x * x * 5 + y * 3) + 1 = 1 + f(1 * 6, 3 * y + 5 * x * x)";
+    assert_eq!(
+        pair_as_ref(&parse(lit).unwrap()),
+        repeat_pair(&make_polynomial(vec![
+            (
+                vec![(
+                    f_var(
+                        make_polynomial(vec![
+                            (vec![], 6),
+                        ]),
+                        make_polynomial(vec![
+                            (vec![(x_var.clone(), 2)], 5),
+                            (vec![(y_var.clone(), 1)], 3),
+                        ]),
+                    ),
+                    1
+                )],
+                1,
+            ),
+            (vec![], 1),
+        ])),
+    );    
 }
 
 #[test]
@@ -199,6 +282,30 @@ fn test_distributive_single() {
 }
 
 #[test]
+fn test_distributive_repr() {
+    let x_var = Varlike::Variable("x".into());
+    let y_var = Varlike::Variable("y".into());
+
+    assert_eq!(
+        pair_as_ref(&parse("(x - 1) * -(x + 1) = -x * x + 1").unwrap()),
+        repeat_pair(&make_polynomial(vec![
+            (vec![(x_var.clone(), 2)], -1),
+            (vec![], 1),
+        ])),
+    );
+
+    assert_eq!(
+        pair_as_ref(&parse("(x - 1) * (y + 1) = x * y + x - y - 1").unwrap()),
+        repeat_pair(&make_polynomial(vec![
+            (vec![(x_var.clone(), 1), (y_var.clone(), 1)], 1),
+            (vec![(x_var.clone(), 1)], 1),
+            (vec![(y_var.clone(), 1)], -1),
+            (vec![], -1),
+        ])),
+    );
+}
+
+#[test]
 fn test_distributive_double() {
     asse_eq("x", "(x + 1) * (x + 1) = x * x + 2 * x + 1");
     
@@ -229,6 +336,21 @@ fn test_distributive_triple() {
 
 
 #[test]
+fn test_unevaled_int_lit_repr() {
+    for (equation, repr) in [
+        ("{ 0b1000 } = { 0x8usize }", "8 "),
+        ("{ 0o15 } = { 13 }", "13 "),
+    ] {        
+        assert_eq!(
+            pair_as_ref(&parse(equation).unwrap()),
+            repeat_pair(&make_polynomial(vec![
+                (vec![(Varlike::UnevaledExpr(UnevaledExpr(repr.into()).into()), 1)], 1),
+            ])),
+        );
+    }
+}
+
+#[test]
 fn test_unevaled_lits() {
     asse_eq("", "{ 0i8 } = { 0u8 }");
     asse_eq("", "{ 0_i8 } = { 0_u8 }");
@@ -252,6 +374,19 @@ fn test_unevaled_char_lits() {
 }
 
 #[test]
+fn test_unevaled_str_lit_repr() {
+    let equation = r#"{ r"foo" } = { r"foo" }"#;
+    let repr = r#"r"foo" "#;
+
+    assert_eq!(
+        pair_as_ref(&parse(equation).unwrap()),
+        repeat_pair(&make_polynomial(vec![
+            (vec![(Varlike::UnevaledExpr(UnevaledExpr(repr.into()).into()), 1)], 1),
+        ])),
+    );
+}
+
+#[test]
 fn test_unevaled_str_lits() {
     asse_eq("", r#"{ "hello" } = { "hello" }"#);
     asse_eq("", r#"{ "\0" } = { "\0" }"#);
@@ -264,11 +399,55 @@ fn test_unevaled_str_lits() {
 }
 
 #[test]
+fn test_unevaled_idents_repr() {
+    assert_eq!(
+        pair_as_ref(&parse("{ foo r#bar } * { r#foo bar } = { foo bar } * { foo bar }").unwrap()),
+        repeat_pair(&make_polynomial(vec![
+            (vec![(Varlike::UnevaledExpr(UnevaledExpr("foo bar ".into()).into()), 2)], 1),
+        ])),
+    );
+}
+
+#[test]
 fn test_unevaled_idents() {
     asse_eq("", "{ foo bar } = { foo bar }");
     asse_eq("", "{ r#foo bar } = { foo r#bar }");
 
     asse_ne("", "{ foo bar } = { a b }");
+    asse_ne("", "{ foo bar } = { foobar }");
+}
+
+#[test]
+fn test_unevaled_punct_repr() {
+    for (equation, repr) in [
+        (
+            "{ Foo<<u32>::Bar<u32>> } = { Foo< <u32>::Bar<u32> > }", 
+            "Foo <<u32 >::Bar <u32 >>",
+        ),
+    ] {
+        assert_eq!(
+            pair_as_ref(&parse(equation).unwrap()),
+            repeat_pair(&make_polynomial(vec![
+                (vec![(Varlike::UnevaledExpr(UnevaledExpr(repr.into()).into()), 1)], 1),
+            ])),
+        );
+    }
+}
+
+#[test]
+fn test_unevaled_delim_repr() {
+    for (equation, repr) in [
+        (" { { a } } = { { a } } ", "{a } "),
+        (" { [ b ] } = { [ b ] } ", "[b ] "),
+        (" { ( c ) } = { ( c ) } ", "(c ) "),
+    ] {
+        assert_eq!(
+            pair_as_ref(&parse(equation).unwrap()),
+            repeat_pair(&make_polynomial(vec![
+                (vec![(Varlike::UnevaledExpr(UnevaledExpr(repr.into()).into()), 1)], 1),
+            ])),
+        );
+    }
 }
 
 #[test]

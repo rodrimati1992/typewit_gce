@@ -14,6 +14,9 @@ mod utils;
 mod unevaled_expr;
 mod normalization;
 
+mod i129;
+mod nonzeroi129;
+
 
 #[derive(Copy, Clone)]
 enum SimplifyFraction {
@@ -52,9 +55,14 @@ fn __parse_one_polynomial(
     simplify_fraction: SimplifyFraction,
     iter: &mut std::iter::Peekable<used_proc_macro::token_stream::IntoIter>,
 ) -> Result<Polynomial, (CrateToken, crate::error::Error)> {
-    parsing_unnorm_polynomial::parse_polynomial(iter)
-        .map_err(|e| (crate_path.clone(), e))
-        .map(|x| normalization::normalize_polynomial(x, simplify_fraction))
+    let unnorm = parsing_unnorm_polynomial::parse_polynomial(iter)
+        .map_err(|e| (crate_path.clone(), e))?;
+
+    normalization::normalize_polynomial(unnorm, simplify_fraction)
+        .map_err(|e| (
+            crate_path.clone(), 
+            crate::error::Error::new(Span::call_site(), e.to_string())
+        ))
 }
 
 fn __parse_polynomials(

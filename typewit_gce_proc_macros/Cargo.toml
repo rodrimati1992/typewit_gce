@@ -1,6 +1,6 @@
 [package]
 name = "typewit_gce_proc_macros"
-version = "0.1.0-beta0"
+version = "0.1.0"
 edition = "2024"
 authors = ["rodrimati1992 <rodrimatt1985@gmail.com>"]
 rust-version = "1.90.0"
@@ -17,11 +17,11 @@ include = [
 proc-macro = true
 
 [dependencies]
-num-bigint = "0.4"
 num-traits = "0.2.19"
 num-integer = "0.1.46"
 proc-macro2 = "1.0.101"
 
 [dev-dependencies]
 itertools = "0.14"
+num-bigint = "0.4"
 

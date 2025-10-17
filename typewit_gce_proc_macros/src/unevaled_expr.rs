@@ -1,16 +1,12 @@
 use crate::{
+    i129::I129,
     used_proc_macro::{Delimiter, Span, TokenTree, TokenStream},
     error::Error,
 };
 
-use num_bigint::BigInt;
-
-use num_traits::Num;
-
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct UnevaledExpr(String);
-
+pub struct UnevaledExpr(pub(crate) String);
 
 
 impl UnevaledExpr {
@@ -26,10 +22,10 @@ impl UnevaledExpr {
 
     fn new_inner(out: &mut String, ts: TokenStream) {
         for tt in ts {
-            match tt {
+            match &tt {
                 TokenTree::Literal(lit) => {
                     let unparsed = lit.to_string();
-                    out.push_str(&match parse_bigint(lit.span(), &unparsed) {
+                    out.push_str(&match parse_i129(lit.span(), &unparsed) {
                         Ok(x) => x.to_string(),
                         Err(_) => unparsed,
                     });
@@ -57,15 +53,19 @@ impl UnevaledExpr {
                     out.push(p.as_char());
                 }
             }
+            if !matches!(tt, TokenTree::Punct(_)) {
+                out.push(' ');
+            }
         }
     }
 }
 
 
 
-pub fn parse_bigint(span: Span, mut str: &str) -> Result<BigInt, Error> {
+pub fn parse_i129(span: Span, str: &str) -> Result<I129, Error> {
     let base;
-    (base, str) = if let Some(stripped) = str.strip_prefix("0b") {
+    let mut stripped;
+    (base, stripped) = if let Some(stripped) = str.strip_prefix("0b") {
         (2, stripped)
     } else if let Some(stripped) = str.strip_prefix("0o") {
         (8, stripped)
@@ -75,12 +75,25 @@ pub fn parse_bigint(span: Span, mut str: &str) -> Result<BigInt, Error> {
         (10, str)
     };
 
-    if let Some((x, _)) = str.split_once(|c: char| matches!(c, 'g'..='z' | 'G'..='Z')) {
-        str = x;
+    if let Some((x, _)) = stripped.split_once(|c: char| matches!(c, 'g'..='z' | 'G'..='Z')) {
+        stripped = x;
     }
 
-    BigInt::from_str_radix(&str.trim().replace("_", ""), base)
-        .map_err(|_| Error::new(span, "could not parse as integer"))
+    I129::from_str_radix(&stripped.trim().replace("_", ""), base)
+        .map_err(|e| {
+            use std::num::IntErrorKind as IEK;
+
+            let msg = match e.kind() {
+                IEK::PosOverflow | IEK::NegOverflow => {
+                    format!("integer literal is too large: {str}")
+                }
+                _ => {
+                    format!("could not parse `{str}` as integer literal because: {e}")
+                }
+            };
+
+            Error::new(span, msg)
+        })
 }
 
 
