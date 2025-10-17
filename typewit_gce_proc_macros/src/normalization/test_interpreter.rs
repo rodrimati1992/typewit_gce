@@ -40,6 +40,7 @@ fn interpret_poly_inner(
         let mut term_val: BigInt = (*coeff).into();
 
         for varlike in poly_vars
+            .vars()
             .iter()
             .flat_map(|(varlike, power)| {
                 let power = usize::try_from(power.get()).unwrap();

@@ -32,12 +32,12 @@ impl Display for Polynomial {
 
 fn fmt_term(vars: &Vars, coeff: &Coefficient, f: &mut fmt::Formatter) -> fmt::Result {
     let abs_coeff = coeff.mag_prim();
-    let mut print_mul = abs_coeff != 1 || vars.is_empty();
+    let mut print_mul = abs_coeff != 1 || vars.vars().is_empty();
     if print_mul {
         write!(f, "{abs_coeff}")?;
     }
 
-    for (varlike, power) in vars {
+    for (varlike, power) in vars.vars().iter() {
         let powered = power.get() > 1;
 
         if std::mem::replace(&mut print_mul, true) {
