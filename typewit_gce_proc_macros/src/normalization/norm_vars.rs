@@ -63,7 +63,7 @@ pub(crate) const POW1: Power = Power::new(1).unwrap();
 impl Vars {
     pub(crate) fn new() -> Self {
         Self {
-            vars: Default::default(),
+            vars: BTreeMap::new(),
         }
     }
 
@@ -94,7 +94,7 @@ impl Vars {
     /// 
     /// # Panics
     /// 
-    /// Panics if a power is passed for a variable that is greater than is present.
+    /// Panics if the power passed for any variable that is greater than is present.
     /// 
     pub(crate) fn remove_vars<I>(&mut self, iter: I)
     where
@@ -120,6 +120,7 @@ impl Vars {
     }
 }
 
+#[cfg(test)]
 impl std::iter::FromIterator<(Varlike, Power)> for Vars {
     fn from_iter<T>(iter: T) -> Self
     where 

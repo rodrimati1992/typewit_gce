@@ -193,7 +193,9 @@ pub(crate) fn normalize_div(
                 FunctionCall::Div(Rc::new(numer_poly), Rc::new(denom_poly.into()))
             );
 
-            out_poly.insert_term((Vars::from_iter([(key, POW1)]), sign.into()))?;
+            let mut vars = Vars::new();
+            vars.insert_var(key, POW1).expect("was empty before, so no overflow");
+            out_poly.insert_term((vars, sign.into()))?;
 
             Ok(NormalizedDivision::Polynomial(out_poly))
         }
@@ -272,7 +274,7 @@ fn div_term_evenly(
 fn extract_common_factor(poly: &mut Polynomial) -> Result<Term, NormErr> {
     let fact = find_common_factor(poly);
 
-    for (vars, coeff) in std::mem::take(poly).into_terms() {
+    for (vars, coeff) in std::mem::replace(poly, Polynomial::zero()).into_terms() {
         let term = div_term_evenly((&vars, &coeff), (&fact.vars, &fact.coeff))
             .expect("coeff and vars must be a multiple of fact, due to how fact is computed");
 

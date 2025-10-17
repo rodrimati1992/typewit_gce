@@ -44,7 +44,7 @@ fn interpret_poly_inner(
             .iter()
             .flat_map(|(varlike, power)| {
                 let power = usize::try_from(power.get()).unwrap();
-                (0..power).map(move|_| varlike)
+                std::iter::repeat_n(varlike, power)
             }) 
         { 
 
@@ -72,7 +72,7 @@ fn interpret_poly_inner(
                         .checked_div(&interpret_poly_inner(denom, vars)?)
                         .ok_or_else(|| InterpreterError::ZeroDenom)?
                 }
-                // an arbitrary function `foo(bar, baz)` is treated as though foo it is
+                // an arbitrary function `foo(bar, baz)` is treated as though foo is
                 // `(foo * (bar + baz))`
                 Varlike::FunctionCall(FC::Other {name, args}) => {
                     let name: &str = name;

@@ -335,6 +335,9 @@ mod tests {
 
     use super::{IntErr, IsZeroErr, OverflowErr, NonZeroI129};
 
+    use std::num::NonZeroU128;
+
+
     fn new_neg(n: u128) -> NonZeroI129 {
         NonZeroI129::new(Sign::Neg, n.try_into().unwrap())
     }
@@ -348,6 +351,80 @@ mod tests {
         n.try_into().unwrap()
     }
 
+
+    #[test]
+    fn test_is_pos_neg() {
+        {
+            let pos = NonZeroI129::try_from(3i128).unwrap();
+            assert!(pos.is_positive());
+            assert!(!pos.is_negative());
+        }
+        {
+            let neg = NonZeroI129::try_from(-3i128).unwrap();
+            assert!(!neg.is_positive());
+            assert!(neg.is_negative());
+        }
+    }
+
+    #[test]
+    fn test_sign() {
+        {
+            let pos = NonZeroI129::new(Sign::Pos, 1u128.try_into().unwrap());
+            assert_eq!(pos.sign(), Sign::Pos);
+            assert_eq!(pos.with_sign(Sign::Neg).sign(), Sign::Neg);
+        }
+        {
+            let neg = NonZeroI129::new(Sign::Neg, 1u128.try_into().unwrap());
+            assert_eq!(neg.sign(), Sign::Neg);
+            assert_eq!(neg.with_sign(Sign::Pos).sign(), Sign::Pos);
+        }
+    }
+
+    #[test]
+    fn test_abs() {
+        let pos = NonZeroI129::try_from(3i128).unwrap();
+        assert_eq!(pos.abs(), pos);
+        
+        
+        let neg = NonZeroI129::try_from(-3i128).unwrap();
+        assert_eq!(neg.abs(), pos);
+    }
+
+    #[test]
+    fn test_one() {
+        assert_eq!(NonZeroI129::one(), NonZeroI129::try_from(1i128).unwrap());
+    }
+
+    #[test]
+    fn test_magnitude() {
+        let pos = NonZeroI129::try_from(3i128).unwrap();
+        assert_eq!(pos.magnitude(), NonZeroU128::new(3u128).unwrap());
+        assert_eq!(pos.mag_prim(), 3u128);
+        
+        let neg = NonZeroI129::try_from(-5i128).unwrap();
+        assert_eq!(neg.magnitude(), NonZeroU128::new(5u128).unwrap());
+        assert_eq!(neg.mag_prim(), 5u128);
+    }
+
+    #[test]
+    fn test_multiple_of_and_gcd() {
+        use num_integer::Integer;
+
+        let range = (-12..=12i128).filter(|x| *x != 0);
+
+        for lhs in range.clone() {
+            for rhs in range.clone() {
+                let gcd = NonZeroI129::try_from(lhs).unwrap()
+                    .gcd(NonZeroI129::try_from(rhs).unwrap());
+
+                let is_multiple_of = NonZeroI129::try_from(lhs).unwrap()
+                    .is_multiple_of(NonZeroI129::try_from(rhs).unwrap());
+
+                assert_eq!(gcd, NonZeroI129::try_from(lhs.gcd(&rhs)).unwrap());
+                assert_eq!(is_multiple_of, lhs.is_multiple_of(&rhs));
+            } 
+        }
+    }
 
     #[test]
     fn test_add_small() {

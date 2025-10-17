@@ -9,7 +9,7 @@ use std::collections::btree_map::{BTreeMap, Entry as MapEntry};
 
 
 
-#[derive(Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct Polynomial {
     pub(crate) terms: BTreeMap<Vars, Coefficient>,
 }
@@ -20,7 +20,7 @@ pub(crate) type Coefficient = NonZeroI129;
 impl Polynomial {
     pub(crate) fn zero() -> Self {
         Self {
-            terms: Default::default(),
+            terms: BTreeMap::new(),
         }
     }
 
@@ -75,6 +75,7 @@ impl Polynomial {
     }
 }
 
+#[cfg(test)]
 impl std::iter::FromIterator<(Vars, Coefficient)> for Polynomial {
     fn from_iter<T>(iter: T) -> Self
     where 

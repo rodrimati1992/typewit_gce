@@ -87,7 +87,8 @@ fn normalize_term(
     }
 
 
-    let mut accum_poly = Polynomial::from_iter([(var_fns, coefficient)]);
+    let mut accum_poly = Polynomial::zero();
+    accum_poly.insert_term((var_fns, coefficient)).expect("was empty before, so can't overflow");
 
     for subpoly in norm_sub.into_iter() {
         let mut new_accum_poly = Polynomial::zero();
@@ -205,7 +206,7 @@ fn unexpanded_normalize_term(
                     }
                 };
 
-                var_fns.insert_var(key, POW1)?
+                var_fns.insert_var(key, POW1)?;
             }
             UnnormMulExpr::Parenthesis(paren) => {
                 norm_sub.push(normalize_polynomial(paren, reduce_fractions)?)

@@ -56,7 +56,7 @@ impl Eq for I129 {}
 
 ////////////////////////////////////////
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum Sign {
     Neg = -1,
     Pos = 1,
