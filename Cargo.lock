@@ -254,7 +254,7 @@ checksum = "f8c1ae7cc0fdb8b842d65d127cb981574b0d2b249b74d1c7a2986863dc134f71"
 
 [[package]]
 name = "typewit_gce"
-version = "0.1.0-beta0"
+version = "0.1.0"
 dependencies = [
  "trybuild",
  "typewit",
@@ -263,7 +263,7 @@ dependencies = [
 
 [[package]]
 name = "typewit_gce_proc_macros"
-version = "0.1.0-beta0"
+version = "0.1.0"
 dependencies = [
  "itertools",
  "num-bigint",

@@ -24,8 +24,9 @@
 /// - `/`: some divisions with polynomials in both the numerator and denominator
 ///     may not be considered equal to other ways of writing them.
 /// - `%`: same limitations as division
-/// - `foo()`: function calls are equal if their path and arguments are equal, 
-///     the `::<>` (turbofish) syntax isn't allowed.
+/// - `foo()`: function calls are equal if their path and arguments compare equal,
+///     the `::<>` (turbofish) syntax isn't allowed,
+///     and the arguments must be the syntax allowed in this list.
 /// - `( ... )`: all of the allowed syntax can be parenthesized for grouping
 /// - `{ ... }`: contains arbitrary syntax that is compared syntactically, 
 ///    [with some permissive exceptions](#arbitrary-syntax-exceptions).
@@ -52,12 +53,12 @@
 /// 1. that the arguments don't expand to different values in different expansions,
 ///   which is the case with some macros and with `#[track_caller]` const functions.
 /// 2. the arithmetic operators (`+`, `-`, `*`, `/`, and `%`) don't cause integer overflow
-/// 3. division and remainder don't have a denominator of 0
+/// 3. `/` and `%` don't have a denominator of 0
 /// 
 /// Assumptions 2 and 3 are currently guaranteed by the compiler,
-/// and *in some (non-guaranteed) cases* also detected by this macro.
+/// and *in some limited cases* also detected by this macro.
 /// 
-/// If those assumptions are broken,
+/// If the above assumptions are broken,
 /// this macro causes a const panic when the function that uses this macro is compiled.
 /// 
 /// 
@@ -77,12 +78,12 @@
 /// }
 /// ```
 /// because `evil()` returns different values depending on where it's called,
-/// the above function produces this error when `foo` is called:
+/// the above function produces this error if `foo` is called:
 /// ```text
 /// error[E0080]: evaluation panicked: 
 ///               `typewit_gce::gce_int_eq` was passed a const expression whose value can be different in different uses
 ///               
-///   --> /home/matias/Documents/proyectos programacion/typewit_gce/src/./root_module_hidden_items.rs:44:32
+///   --> ./src/root_module_hidden_items.rs:44:32
 ///    |
 /// 44 |             let equal_consts = type_cmp.expect_eq(err_msg);
 ///    |                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `typewit_gce::_::<impl typewit_gce::__GceIntEqHelper<usize, typewit_gce::const_marker::Usize<34>, typewit_gce::const_marker::Usize<42>>>::NEW` failed here
@@ -367,9 +368,9 @@
 /// 
 /// ### Arbitrary syntax
 /// 
-/// This macro allows arbitrary syntax to be passed through in braces (`{ ... }`),
+/// This macro allows arbitrary expressions to be passed in braces (`{ ... }`),
 /// which is not normalized, it's only compared syntactically as 
-/// described in the [#syntax] section.
+/// described in the [syntax](#syntax) section.
 /// 
 /// ```rust
 /// # #![allow(incomplete_features)]
@@ -419,6 +420,7 @@
 /// #![feature(generic_const_exprs)]
 /// use typewit_gce::{TypeEq, gce_int_eq};
 /// 
+/// /////////
 /// 
 /// assert_eq!(commutative_add::<3, 2>([3, 5, 8, 13, 21]), [3, 5, 8, 13, 21]);
 /// 
@@ -426,6 +428,7 @@
 ///     TypeEq::NEW.in_array(gce_int_eq!(N + M, M + N)).to_right(arr)
 /// }
 /// 
+/// /////////
 /// 
 /// assert_eq!(sub_cancels_out::<3, 1>([3]), [3]);
 /// assert_eq!(sub_cancels_out::<3, 2>([3, 5]), [3, 5]);
@@ -436,6 +439,7 @@
 ///     TypeEq::NEW.in_array(gce_int_eq!(N - N + M, M)).to_right(arr)
 /// }
 /// 
+/// /////////
 /// 
 /// assert_eq!(commutative_mul::<3, 2>([3, 5, 8, 13, 21, 34]), [3, 5, 8, 13, 21, 34]);
 /// 
@@ -443,6 +447,7 @@
 ///     TypeEq::NEW.in_array(gce_int_eq!(N * M, M * N)).to_right(arr)
 /// }
 /// 
+/// /////////
 /// 
 /// assert_eq!(distributive_mul::<2, 1>([3, 5, 8, 13]), [3, 5, 8, 13]);
 /// 
@@ -452,6 +457,7 @@
 ///     TypeEq::NEW.in_array(gce_int_eq!(N * (1 + M), N + M * N)).to_right(arr)
 /// }
 /// 
+/// /////////
 /// 
 /// assert_eq!(simplify_div::<1>([3, 5, 8]), [3, 5, 8]);
 /// assert_eq!(simplify_div::<2>([3]), [3]);
@@ -465,6 +471,7 @@
 ///     TypeEq::NEW.in_array(len_te).to_right(arr)
 /// }
 /// 
+/// /////////
 /// 
 /// assert_eq!(extract_div::<1>([3, 5]), [3, 5]);
 /// assert_eq!(extract_div::<2>([3]), [3]);
