@@ -1,11 +1,11 @@
 [package]
 name = "typewit_gce"
-version = "0.1.0-beta0"
+version = "0.1.0"
 authors = ["rodrimati1992 <rodrimatt1985@gmail.com>"]
 rust-version = "1.90.0"
 edition = "2024"
 license = "Zlib"
-description = "for coercing equal generic const arguments"
+description = "for coercing between equal types with generic const arguments"
 documentation = "https://docs.rs/typewit_gce/"
 readme="./README.md"
 keywords = ["gce", "algebra", "type-equality", "const-generics"]
@@ -25,7 +25,7 @@ __ui_tests = ["dep:trybuild"]
 
 
 [dependencies.typewit_gce_proc_macros]
-version = "=0.1.0-beta0"
+version = "=0.1.0"
 path = "./typewit_gce_proc_macros"
 
 [dependencies.typewit]
