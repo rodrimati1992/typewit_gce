@@ -16,7 +16,13 @@
 /// 
 /// # Syntax
 /// 
-/// This macro supports a subset of valid Rust syntax in each expression:
+/// The `$ty:ty` optional parameter is used to explicitly annotate the type of the 
+/// `$lhs` and `$rhs` parameters
+/// (only required if their type can't be inferred from either the argument or 
+/// the expected return type).
+/// 
+/// Both `$lhs:expr` and `$rhs:expr` can only have a subset of
+/// valid Rust syntax in each expression:
 /// - `+`
 /// - `-`(unary and binary)
 /// - `*`(binary)
@@ -24,6 +30,8 @@
 /// - `/`: some divisions with polynomials in both the numerator and denominator
 ///     may not be considered equal to other ways of writing them.
 /// - `%`: same limitations as division
+/// - numeric literals
+/// - `BAR`/`foo::BAR`: constants are equal if their path is the same
 /// - `foo()`: function calls are equal if their path and arguments compare equal,
 ///     the `::<>` (turbofish) syntax isn't allowed,
 ///     and the arguments must be the syntax allowed in this list.
