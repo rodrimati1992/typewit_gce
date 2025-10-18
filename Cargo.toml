@@ -1,8 +1,8 @@
 [package]
 name = "typewit_gce"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["rodrimati1992 <rodrimatt1985@gmail.com>"]
-rust-version = "1.90.0"
+rust-version = "1.91.0"
 edition = "2024"
 license = "Zlib"
 description = "for coercing between equal types with generic const arguments"
